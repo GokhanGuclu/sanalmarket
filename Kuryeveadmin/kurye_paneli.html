@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurye Paneli - Market Siparişleri</title>
+    <link rel="stylesheet" href="kurye_panel.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Market Kurye Paneli</h1>
+            <nav>
+                <ul>
+                    <li><a href="#">Ana Sayfa</a></li>
+                    <li><a href="#">Yeni Siparişler</a></li>
+                    <li><a href="#">Eski Siparişler</a></li>
+                    <li><a href="#">Profil</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section class="order-list">
+            <h2>Yeni Siparişler</h2>
+            <table id="orders-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Alıcı</th>
+                        <th>Adres</th>
+                        <th>Sipariş Durumu</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Örnek Sipariş -->
+                    <tr>
+                        <td>1</td>
+                        <td>Ahmet Yılmaz</td>
+                        <td>İstanbul, Beyoğlu</td>
+                        <td><span class="status hazırlanıyor">Hazırlanıyor</span></td>
+                        <td><button class="btn update">Teslim Et</button></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Elif Demir</td>
+                        <td>Ankara, Çankaya</td>
+                        <td><span class="status yolaçıktı">Yola Çıktı</span></td>
+                        <td><button class="btn update">Teslim Et</button></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Mehmet Can</td>
+                        <td>İzmir, Konak</td>
+                        <td><span class="status teslimedildi">Teslim Edildi</span></td>
+                        <td><button class="btn update" disabled>Teslim Edildi</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <p>&copy; 2024 Market Kurye Paneli. Tüm hakları saklıdır.</p>
+        </footer>
+    </div>
+
+    <!-- Teslimat için kod girişi -->
+    <div id="delivery-modal" class="modal">
+        <div class="modal-content">
+            <h2>Sipariş Teslimi İçin Kod Giriniz</h2>
+            <input type="text" id="delivery-code" placeholder="Teslimat Kodu">
+            <button id="confirm-delivery">Teslimat Onayla</button>
+            <button id="close-modal">Kapat</button>
+        </div>
+    </div>
+
+    <script>// Siparişleri veritabanından almak için AJAX çağrısı yapacağız.
+        document.addEventListener("DOMContentLoaded", function() {
+            // Yeni siparişleri veritabanından çekmek için bir fonksiyon
+            fetchOrders();
+        
+            // Teslimat işlemi için modal açma
+            document.querySelectorAll('.btn.update').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    openDeliveryModal(this);
+                });
+            });
+        
+            // Teslimat onaylama
+            document.getElementById('confirm-delivery').addEventListener('click', function() {
+                const code = document.getElementById('delivery-code').value;
+                if (code === '') {
+                    alert('Lütfen teslimat kodunu girin.');
+                } else {
+                    confirmDelivery(code);
+                }
+            });
+        
+            // Modal'ı kapatma
+            document.getElementById('close-modal').addEventListener('click', function() {
+                closeModal();
+            });
+        });
+        
+        // Veritabanından siparişleri çekme (AJAX ile)
+        function fetchOrders() {
+            // AJAX isteği ile veritabanından yeni siparişleri çekiyoruz
+            fetch('/api/get-orders')  // Bu endpoint backend'den verileri alacak
+                .then(response => response.json())
+                .then(orders => {
+                    const tbody = document.querySelector('#orders-table tbody');
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${order.id}</td>
+                            <td>${order.customer}</td>
+                            <td>${order.address}</td>
+                            <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
+                            <td><button class="btn update">Teslim Et</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+        
+        // Teslimat modalını açma
+        function openDeliveryModal(button) {
+            const orderId = button.closest('tr').querySelector('td').textContent;
+            // Modalda gösterilecek sipariş ID'si
+            document.getElementById('delivery-modal').style.display = 'block';
+            document.getElementById('delivery-modal').dataset.orderId = orderId;
+        }
+        
+        // Teslimat işlemini onaylama
+        function confirmDelivery(code) {
+            const orderId = document.getElementById('delivery-modal').dataset.orderId;
+            // AJAX isteği ile teslimat kodunu backend'e gönderiyoruz
+            fetch('/api/confirm-delivery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId, code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Teslimat başarılı!');
+                    closeModal();
+                    fetchOrders();  // Yeni siparişleri yeniden yükle
+                } else {
+                    alert('Kod hatalı! Lütfen tekrar deneyin.');
+                }
+            });
+        }
+        
+        // Modal'ı kapatma
+        function closeModal() {
+            document.getElementById('delivery-modal').style.display = 'none';
+            document.getElementById('delivery-code').value = '';
+        }
+        </script>
+</body>
+</html>

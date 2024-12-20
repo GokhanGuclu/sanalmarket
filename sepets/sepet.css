@@ -1,0 +1,166 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+}
+
+.cart-container {
+  max-width: 1200px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cart-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.cart-title span {
+  font-size: 16px;
+  color: #777;
+}
+
+.cart-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Sol ve sağ kolon genişliği */
+  gap: 20px;
+  align-items: start; /* Elemanlar yukarıdan hizalı */
+}
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cart-item-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 100%; /* Ürün kutusunun taşmasını önler */
+}
+
+.product-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cart-item-details {
+  flex: 1;
+  margin-left: 20px;
+  overflow: hidden; /* Uzun metinlerin taşmasını önler */
+}
+
+.product-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.product-unit-price {
+  font-size: 14px;
+  color: #777;
+  margin: 5px 0 0;
+}
+
+.cart-item-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.product-price {
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-btn {
+  padding: 5px 10px;
+  background-color: #ffc400;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.quantity-btn:hover {
+  background-color: #e0a800;
+}
+
+.quantity-display {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cart-summary {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  position: sticky;
+  top: 20px; /* Sağ tarafın sabit kalması için */
+  height: fit-content;
+  align-self: start; /* Grid hizalaması */
+}
+
+.cart-summary h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.cart-summary p {
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+.cart-summary .total {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 15px;
+  background-color: #ffc400;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.checkout-btn:hover {
+  background-color: #e0a800;
+}
+
+/* Taşma ve hizalama sorunu çözümü */
+.cart-content {
+  gap: 40px; /* Sağ ve sol kolonlar arasındaki boşluk artırıldı */
+}
+
+.cart-items {
+  margin-bottom: 20px; /* Sağ tarafla olası çakışmaları önlemek için boşluk eklendi */
+}

@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.11.5"
+  },
+"scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+}
+,
+  "name": "sanalmarket",
+  "version": "1.0.0",
+  "main": "sepet.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

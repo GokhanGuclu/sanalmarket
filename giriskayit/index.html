@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş ve Üyelik</title>
+    <link rel="stylesheet" href="girisUye.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Nigros</h1>
+    </div>
+
+    <div class="container">
+        <div class="box" id="login-box">
+            <h2>Giriş Yap</h2>
+            <form onsubmit="event.preventDefault(); loginUser();">
+                <input type="email" placeholder="E-posta Adresiniz" required>
+                <input type="password" placeholder="Şifreniz" required>
+                <button type="button" onclick="loginUser()">Giriş Yap</button>
+            </form>
+            <div class="footer-links">
+                <a href="#" onclick="showRegisterBox()">Üye Ol</a>
+                <a href="#">Giriş Yapamıyorum</a>
+            </div>
+        </div>
+
+        <div class="box" id="register-box">
+            <h2>Üye Ol</h2>
+            <form onsubmit="event.preventDefault(); registerUser();">
+                <input type="text" placeholder="Adınız" required>
+                <input type="text" placeholder="Soyadınız" required>
+                <input type="email" placeholder="E-posta Adresiniz" required>
+                <input type="text" placeholder="Telefon Numaranız (0XXX-XXX-XX-XX)" required>
+                <input type="password" placeholder="Şifreniz" required>
+                <button type="submit" onclick="registerUser()">Üye Ol</button>
+            </form>
+            <div class="footer-links">
+                <a href="#" onclick="showLoginBox()">Giriş Yap</a>
+            </div>
+        </div>
+
+        <script src="giris.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+<header class="navbar1">
+    <div style="position: relative; display: inline-block;">
+        <button class="nav-item1" onclick="toggleAddressDropdown()">
+            <i class="icon1">📍</i>
+            <span id="selected-address">Teslimat Adresi: <strong>Ev Yeni</strong></span>
+        </button>
+
+        <div class="address-dropdown" id="addressDropdown">
+            <div class="dropdown-item" onclick="selectAddress('Ev Yeni')">
+                <p class="address-name">Ev Yeni</p>
+                <p class="address-details">Ev adresiniz: İstanbul, Türkiye</p>
+            </div>
+            <div class="dropdown-item" onclick="selectAddress('Ofis')">
+                <p class="address-name">Ofis</p>
+                <p class="address-details">İş adresiniz: Ankara, Türkiye</p>
+            </div>
+            <div class="dropdown-item" onclick="selectAddress('Diğer')">
+                <p class="address-name">Diğer</p>
+                <p class="address-details">Ek adres: İzmir, Türkiye</p>
+            </div>
+        </div>
+    </div>
+
+    <button class="nav-item1">
+        <i class="icon1">🚚</i>
+        <span>Varış Süresi: <strong>17 dk</strong></span>
+    </button>
+
+    <div class="search-container1">
+        <input type="text" placeholder="Ürün arayın..." class="search-input1">
+        <button class="search-btn1">Ara</button>
+    </div>
+
+    <button class="nav-item1">
+        <a href="/giriskayit/">
+            <i class="icon1">👤</i>
+            <span>Giriş Yap</span>
+        </a>
+    </button>
+
+    <div style="position: relative; display: inline-block;">
+        <button class="nav-item1 cart-btn" onclick="navbartoggleCartDropdown()">
+            <i class="icon1">🛒</i>
+            <span class="badge1" style="display: none;">0</span>
+            <span>Sepetim</span>
+            <span class="cart-total1">0.00 TL</span>
+        </button>
+
+        <div class="cart-dropdown" id="cartDropdown">
+            <p style="text-align: center; margin: 10px 0; color: #555; font-size: 14px;">
+                Sepetiniz Boş
+            </p>
+        </div>
+    </div>
+    <script src="/sepet.js"></script>
+</header>

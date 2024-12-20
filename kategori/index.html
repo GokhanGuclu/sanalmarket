@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategoriler</title>
+    <link rel="stylesheet" href="kategori.css">
+
+</head>
+
+<body>
+    <div id="navbar"></div>
+    <script src="/navbar/navbar.js" defer></script>
+    <script src="/sepet.js"></script>
+    <link rel="stylesheet" href="/navbar/navbar.css">
+
+    <main class="category-section">
+        <div class="category-sidebar">
+            <ul>
+                <li><a href="/kategori/avantajlipaketler">Avantajlı Paketler</a></li>
+                <li><a href="/kategori/atistirmalik">Atıştırmalıklar</a></li>
+                <li><a href="/kategori/icecek">İçecekler</a></li>
+                <li><a href="/kategori/dondurma">Dondurma</a></li>
+                <li><a href="/kategori/meyvesebze">Meyve & Sebze</a></li>
+                <li><a href="/kategori/dondurulmusgida">Dondurulmuş Gıda</a></li>
+                <li><a href="/kategori/firin">Fırın</a></li>
+                <li><a href="/kategori/sutvekahvaltilik">Süt & Kahvaltılık</a></li>
+                <li><a href="/kategori/haziryemek">Hazır Yemek</a></li>
+                <li><a href="/kategori/ozelbeslenme">Özel Beslenme</a></li>
+                <li><a href="/kategori/ettavukbalik">Et & Tavuk & Balık</a></li>
+                <li><a href="/kategori/temelgida">Temel Gıda</a></li>
+                <li><a href="/kategori/bebek">Bebek</a></li>
+                <li><a href="/kategori/evcilhayvan">Evcil Hayvan</a></li>
+                <li><a href="/kategori/temizlikevgerecleri">Temizlik & Ev Gereçleri</a></li>
+                <li><a href="/kategori/kisiselbakimkozmetik">Kişisel Bakım & Kozmetik</a></li>
+                <li><a href="/kategori/cinselsaglik">Cinsel Sağlık</a></li>
+                <li><a href="/kategori/evyasam">Ev Yaşam</a></li>
+                <li><a href="/kategori/hobioyun">Hobi & Oyun</a></li>
+            </ul>
+        </div>        
+
+        <div class="category-container">
+            <div class="category-item">
+                <span class="discount">İndirimde!</span>
+                <img src="/resimler/product1.jpg" alt="Ürün 1">
+                <h3>Ürün 1</h3>
+                <p class="price"><del>59,99 TL</del> 49,99 TL</p>
+                <button class="add-to-cart" onclick="toggleQuantityControls(this)">Sepete Ekle</button>
+                <div class="quantity-controls-item">
+                    <button class="quantity-btn-item" onclick="changeQuantity(this, -1)">−</button>
+                    <span class="quantity-display-item">1</span>
+                    <button class="quantity-btn-item" onclick="changeQuantity(this, 1)">+</button>
+                </div>
+            </div>
+
+            <div class="category-item">
+                <img src="/resimler/product2.jpg" alt="Ürün 2">
+                <h3>Ürün 2</h3>
+                <p class="price">79,99 TL</p>
+                <button class="add-to-cart" onclick="toggleQuantityControlss(this)">Sepete Ekle</button>
+                <div class="quantity-controls-item">
+                    <button class="quantity-btn-item" onclick="changeQuantitys(this, -1)">−</button>
+                    <span class="quantity-display-item">1</span>
+                    <button class="quantity-btn-item" onclick="changeQuantitys(this, 1)">+</button>
+                </div>
+            </div>
+
+            <div class="category-item">
+                <span class="discount">İndirimde!</span>
+                <img src="/resimler/product3.jpg" alt="Ürün 3">
+                <h3>Ürün 3</h3>
+                <p class="price"><del>119,99 TL</del> 99,99 TL</p>
+                <button class="add-to-cart" onclick="toggleQuantityControlss(this)">Sepete Ekle</button>
+                <div class="quantity-controls-item">
+                    <button class="quantity-btn-item" onclick="changeQuantitys(this, -1)">−</button>
+                    <span class="quantity-display-item">1</span>
+                    <button class="quantity-btn-item" onclick="changeQuantitys(this, 1)">+</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <img src="nigros.jpg" alt="Logo" class="footer-logo">
+            <span class="footer-text">Nigros</span>
+        </div>
+    </footer>
+
+    <script src="kategori.js"></script>
+</body>
+
+</html>
