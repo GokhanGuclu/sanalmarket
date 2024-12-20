@@ -101,7 +101,7 @@ function updateCartDropdown() {
         badgeElement.style.display = farkliUrunSayisi > 0 ? 'inline-block' : 'none';
     }
 }
-
+//deneme
 function changeCartQuantity(urunID, delta) {
     const kullaniciID = 1000; // Varsayılan kullanıcı ID'si
 
