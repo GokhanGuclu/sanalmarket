@@ -90,19 +90,31 @@ function updateCartPage() {
         `;
     } else {
         sqlUrunler.forEach((urun) => {
+            // İndirim kontrolü
             const indirimliFiyat = urun.IndirimOrani > 0
                 ? (urun.orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
                 : parseFloat(urun.orijinalFiyat).toFixed(2);
 
-            const toplamUrunFiyati = parseFloat(urun.toplamFiyat).toFixed(2);
+            const toplamUrunFiyati = (indirimliFiyat * urun.UrunSayisi).toFixed(2);
+            const orijinalToplamFiyat = (urun.orijinalFiyat * urun.UrunSayisi).toFixed(2);
             toplamFiyat += parseFloat(toplamUrunFiyati);
 
+            // HTML içeriği oluşturma
             const cartItemHTML = `
                 <div class="cart-item-box" data-urun-id="${urun.UrunID}">
                     <img src="${urun.Gorsel}" alt="${urun.UrunAdi}" class="product-image">
                     <div class="cart-item-details">
-                        <p class="product-name">${urun.UrunAdi}</p>
-                        <p class="product-unit-price">Birim Fiyat: ${indirimliFiyat} TL</p>
+                        <p class="product-name">
+                            ${urun.UrunAdi}
+                            ${urun.IndirimOrani > 0 ? `<span style="color: red; font-weight: bold;"> (İndirimde!)</span>` : ''}
+                        </p>
+                        <p class="product-unit-price">
+                            ${urun.IndirimOrani > 0 
+                                ? `<span style="text-decoration: line-through; color: gray;">${orijinalToplamFiyat} TL</span> `
+                                : ''
+                            }
+                            ${toplamUrunFiyati} TL
+                        </p>
                     </div>
                     <div class="cart-item-controls">
                         <p class="product-price">${toplamUrunFiyati} TL</p>

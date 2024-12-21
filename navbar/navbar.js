@@ -76,8 +76,7 @@ function updateCartDropdown() {
                             <p>
                                 ${urun.IndirimOrani > 0 
                                     ? `<span style="text-decoration: line-through; color: gray;">${toplamOrijinalFiyat} TL</span> `
-                                    : ''
-                                }
+                                    : ''}
                                 <strong>${toplamIndirimliFiyat} TL</strong>
                             </p>
                         </div>
@@ -130,6 +129,9 @@ function changeCartQuantity(urunID, delta) {
         return;
     }
 
+    // **Yükleme Ekranını Aç**
+    showLoadingSpinner();
+
     // Yerel sepeti güncelle
     if (!sepet[urunID]) {
         sepet[urunID] = 0;
@@ -155,6 +157,9 @@ function changeCartQuantity(urunID, delta) {
 
                 // API başarılıysa UI'yi güncelle
                 updateCartDropdown();
+                setTimeout(() => {
+                    location.reload(); // Sayfayı yenile
+                }, 500); // 500 ms bekleyip yenile
             } else {
                 console.error('Ürün miktarı güncellenirken hata:', data.message);
                 alert('Sepet güncelleme sırasında bir hata oluştu.');
@@ -163,10 +168,15 @@ function changeCartQuantity(urunID, delta) {
         .catch(error => {
             console.error('API isteği başarısız oldu:', error);
             alert('Sunucuya bağlanırken bir hata oluştu.');
+        })
+        .finally(() => {
+            setTimeout(() => {
+                hideLoadingSpinner();
+                location.reload();
+            }, 500); // 1 saniye bekleme
+            
         });
 }
-
-
 
 function selectAddress(address) {
     const selectedAddress = document.getElementById('selected-address');
@@ -208,4 +218,13 @@ function toggleAddressDropdown() {
     if (dropdown) {
         dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     }
+}
+
+// **Spinner Kontrolleri**
+function showLoadingSpinner() {
+    document.getElementById('loading-overlay').classList.remove('hidden');
+}
+
+function hideLoadingSpinner() {
+    document.getElementById('loading-overlay').classList.add('hidden');
 }

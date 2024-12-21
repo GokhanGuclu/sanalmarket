@@ -41,44 +41,12 @@
         </div>        
 
         <div class="category-container">
-            <div class="category-item">
-                <span class="discount">İndirimde!</span>
-                <img src="/resimler/product1.jpg" alt="Ürün 1">
-                <h3>Ürün 1</h3>
-                <p class="price"><del>59,99 TL</del> 49,99 TL</p>
-                <button class="add-to-cart" onclick="toggleQuantityControls(this)">Sepete Ekle</button>
-                <div class="quantity-controls-item">
-                    <button class="quantity-btn-item" onclick="changeQuantity(this, -1)">−</button>
-                    <span class="quantity-display-item">1</span>
-                    <button class="quantity-btn-item" onclick="changeQuantity(this, 1)">+</button>
-                </div>
-            </div>
 
-            <div class="category-item">
-                <img src="/resimler/product2.jpg" alt="Ürün 2">
-                <h3>Ürün 2</h3>
-                <p class="price">79,99 TL</p>
-                <button class="add-to-cart" onclick="toggleQuantityControlss(this)">Sepete Ekle</button>
-                <div class="quantity-controls-item">
-                    <button class="quantity-btn-item" onclick="changeQuantitys(this, -1)">−</button>
-                    <span class="quantity-display-item">1</span>
-                    <button class="quantity-btn-item" onclick="changeQuantitys(this, 1)">+</button>
-                </div>
-            </div>
-
-            <div class="category-item">
-                <span class="discount">İndirimde!</span>
-                <img src="/resimler/product3.jpg" alt="Ürün 3">
-                <h3>Ürün 3</h3>
-                <p class="price"><del>119,99 TL</del> 99,99 TL</p>
-                <button class="add-to-cart" onclick="toggleQuantityControlss(this)">Sepete Ekle</button>
-                <div class="quantity-controls-item">
-                    <button class="quantity-btn-item" onclick="changeQuantitys(this, -1)">−</button>
-                    <span class="quantity-display-item">1</span>
-                    <button class="quantity-btn-item" onclick="changeQuantitys(this, 1)">+</button>
-                </div>
-            </div>
         </div>
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+        
     </main>
 
     <footer class="footer">

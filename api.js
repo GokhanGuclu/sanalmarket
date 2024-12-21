@@ -173,18 +173,36 @@ router.post('/sepet', async (req, res) => {
     }
 });
 
-// Sepetten Ürün Silme (DELETE)
-router.delete('/sepet/:urunAdi', async (req, res) => {
-    const { urunAdi } = req.params;
+router.delete('/sepet/:urunID', async (req, res) => {
+    const urunID = parseInt(req.params.urunID);
     const kullaniciID = 1000; // Sabit kullanıcı ID'si
 
     try {
-        const query = `
-            DELETE FROM Sepet 
-            WHERE KullaniciID = ? 
-            AND UrunID = (SELECT UrunID FROM Urun WHERE UrunAdi = ?);
+        // 1. Sepet ID'sini al
+        const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
+        const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
+
+        if (!sepet) {
+            return res.status(400).json({ success: false, message: 'Sepet bulunamadı.' });
+        }
+
+        const sepetID = sepet.SepetID;
+
+        // 2. Ürünü sil
+        const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
+        await runQuery(deleteQuery, [urunID, sepetID]);
+
+        // 3. Toplam sepet fiyatını güncelle
+        const updateCartPriceQuery = `
+            UPDATE Sepet
+            SET SepetFiyat = (
+                SELECT COALESCE(SUM(UrunFiyat), 0)
+                FROM SepetUrunleri
+                WHERE SepetID = ?
+            )
+            WHERE SepetID = ?;
         `;
-        await runQuery(query, [kullaniciID, urunAdi]);
+        await runQuery(updateCartPriceQuery, [sepetID, sepetID]);
 
         res.json({ success: true });
     } catch (error) {
@@ -197,11 +215,8 @@ router.put('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
     const { delta, kullaniciID } = req.body;
 
-    if (isNaN(urunID) || isNaN(delta)) {
-        return res.status(400).json({ success: false, message: "Geçersiz urunID veya delta değeri." });
-    }
-
     try {
+        // 1. Sepet ID'sini al
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
 
@@ -211,40 +226,128 @@ router.put('/sepet/:urunID', async (req, res) => {
 
         const sepetID = sepet.SepetID;
 
-        // Ürün fiyatını ve indirim oranını kontrol et
-        const fiyatQuery = `
+        // 2. Ürün kontrolü
+        const getProductQuery = `
+            SELECT SU.UrunSayisi, U.UrunFiyat, COALESCE(I.IndirimOrani, 0) AS IndirimOrani
+            FROM SepetUrunleri SU
+            INNER JOIN Urun U ON SU.UrunID = U.UrunID
+            LEFT JOIN Indirim I ON U.UrunID = I.UrunID
+            WHERE SU.UrunID = ? AND SU.SepetID = ?;
+        `;
+        const [urun] = await runQuery(getProductQuery, [urunID, sepetID]);
+
+        if (!urun) {
+            return res.status(400).json({ success: false, message: 'Ürün sepette bulunamadı.' });
+        }
+
+        let yeniMiktar = urun.UrunSayisi + delta;
+
+        // Fiyat hesapla
+        const orijinalFiyat = parseFloat(urun.UrunFiyat);
+        let indirimliFiyat = urun.IndirimOrani > 0
+            ? (orijinalFiyat * (1 - urun.IndirimOrani / 100))
+            : orijinalFiyat;
+
+        const toplamFiyat = (indirimliFiyat * yeniMiktar).toFixed(2);
+
+        if (yeniMiktar <= 0) {
+            const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
+            await runQuery(deleteQuery, [urunID, sepetID]);
+        } else {
+            const updateQuery = `
+                UPDATE SepetUrunleri
+                SET UrunSayisi = ?, UrunFiyat = ?
+                WHERE UrunID = ? AND SepetID = ?;
+            `;
+            await runQuery(updateQuery, [yeniMiktar, toplamFiyat, urunID, sepetID]);
+        }
+
+        const updateCartPriceQuery = `
+            UPDATE Sepet
+            SET SepetFiyat = (
+                SELECT COALESCE(SUM(UrunFiyat), 0)
+                FROM SepetUrunleri
+                WHERE SepetID = ?
+            )
+            WHERE SepetID = ?;
+        `;
+        await runQuery(updateCartPriceQuery, [sepetID, sepetID]);
+
+        res.json({ success: true, message: 'Ürün güncellendi.' });
+    } catch (error) {
+        console.error('Sepet güncellenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Sepet güncellenemedi.' });
+    }
+});
+
+router.post('/sepet/ekle/:urunID', async (req, res) => {
+    const urunID = parseInt(req.params.urunID);
+    const { kullaniciID, urunSayisi } = req.body;
+
+    try {
+        // 1. Sepet ID'sini al veya oluştur
+        const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
+        let [sepet] = await runQuery(sepetQuery, [kullaniciID]);
+
+        let sepetID;
+        if (!sepet) {
+            const createCartQuery = `
+                INSERT INTO Sepet (KullaniciID, SepetFiyat)
+                VALUES (?, 0.00);
+            `;
+            const result = await runQuery(createCartQuery, [kullaniciID]);
+            sepetID = result.insertId; // Yeni oluşturulan sepet ID'si
+        } else {
+            sepetID = sepet.SepetID; // Mevcut sepet ID'si
+        }
+
+        // 2. Ürün bilgilerini al
+        const getProductQuery = `
             SELECT U.UrunFiyat, COALESCE(I.IndirimOrani, 0) AS IndirimOrani
             FROM Urun U
             LEFT JOIN Indirim I ON U.UrunID = I.UrunID
             WHERE U.UrunID = ?;
         `;
-        const [urun] = await runQuery(fiyatQuery, [urunID]);
+        const [urun] = await runQuery(getProductQuery, [urunID]);
 
-        let indirimliFiyat = urun.IndirimOrani > 0
-            ? (urun.UrunFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
-            : urun.UrunFiyat.toFixed(2);
+        if (!urun) {
+            return res.status(400).json({ success: false, message: 'Geçersiz ürün ID.' });
+        }
 
-        const updateQuery = `
-            UPDATE SepetUrunleri 
-            SET UrunSayisi = UrunSayisi + ?, 
-                UrunFiyat = UrunSayisi * ?
-            WHERE UrunID = ? AND SepetID = ?;
+        // 3. İndirim kontrolü ve fiyat hesaplama
+        const orijinalFiyat = parseFloat(urun.UrunFiyat);
+        const indirimliFiyat = urun.IndirimOrani > 0
+            ? (orijinalFiyat * (1 - urun.IndirimOrani / 100))
+            : orijinalFiyat;
+
+        const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
+
+        // 4. Sepete ürünü ekle veya güncelle
+        const addOrUpdateProductQuery = `
+            INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            UrunSayisi = UrunSayisi + VALUES(UrunSayisi),
+            UrunFiyat = VALUES(UrunFiyat);
         `;
-        await runQuery(updateQuery, [delta, indirimliFiyat, urunID, sepetID]);
+        await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
 
-        const updateTotalQuery = `
+        // 5. Sepet toplam fiyatını güncelle
+        const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
-                SELECT SUM(UrunFiyat) FROM SepetUrunleri WHERE SepetID = ?
+                SELECT COALESCE(SUM(UrunFiyat), 0)
+                FROM SepetUrunleri
+                WHERE SepetID = ?
             )
             WHERE SepetID = ?;
         `;
-        await runQuery(updateTotalQuery, [sepetID, sepetID]);
+        await runQuery(updateCartPriceQuery, [sepetID, sepetID]);
 
-        res.json({ success: true, message: 'Ürün güncellendi.' });
+        res.json({ success: true, message: 'Ürün sepete eklendi.', sepetID });
     } catch (error) {
-        console.error('Hata:', error.message);
-        res.status(500).json({ success: false, message: 'Sepet güncellenemedi.' });
+        console.error('Ürün eklenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Ürün eklenemedi.' });
     }
 });
 
