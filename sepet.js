@@ -38,48 +38,42 @@ function deleteFromCartServer(urunID) {
 }
 
 function updateCart(urunID, miktarDegisimi) {
-    if (!sepet[urunID]) {
-        console.error(`Ürün ID'si bulunamadı: ${urunID}`);
+    const urun = sqlUrunler.find(u => u.UrunID === parseInt(urunID));
+    if (!urun) {
+        console.error('Ürün bulunamadı!');
         return;
     }
 
-    // Ürün miktarını güncelle
-    sepet[urunID] += miktarDegisimi;
+    // İndirimli fiyatı hesapla
+    const orijinalFiyat = parseFloat(urun.orijinalFiyat);
+    const indirimliFiyat = urun.IndirimOrani > 0
+        ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
+        : orijinalFiyat.toFixed(2);
 
-    // Eğer miktar 0 veya altına düşerse ürünü sepetten çıkar
-    if (sepet[urunID] <= 0) {
-        delete sepet[urunID];
-    }
+    const toplamFiyat = (indirimliFiyat * miktarDegisimi).toFixed(2);
 
-    // Sunucuya sepeti güncelleme isteği gönder
-    fetch('/api/update-cart', {
-        method: 'POST',
+    // Sunucuya güncelleme isteği gönder
+    fetch(`/api/sepet/${urunID}`, {
+        method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            urunID: urunID,
-            miktar: sepet[urunID] || 0, // Ürün sepetten çıkarılmışsa 0 gönder
+            delta: miktarDegisimi,
+            kullaniciID: 1000,
+            urunFiyat: toplamFiyat, // Sunucuya güncel fiyatı gönder
         }),
     })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Sepet güncellenirken bir hata oluştu.');
-            }
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
             if (data.success) {
-                console.log('Sepet başarıyla güncellendi.');
-                // Sepeti tekrar render et
-                updateCartDropdown();
+                console.log('Sepet güncellendi.');
+                updateUI(); // UI'yi güncelle
             } else {
                 console.error('Sepet güncellenemedi:', data.message);
             }
         })
-        .catch(err => {
-            console.error('Sepet güncellenirken hata oluştu:', err);
-        });
+        .catch(err => console.error('Sepet güncellenirken hata oluştu:', err));
 }
 
 
@@ -103,8 +97,8 @@ function updateUI() {
 
                 if (urun) {
                     const orijinalFiyat = parseFloat(urun.orijinalFiyat);
-                    const indirimliFiyat = urun.indirimOrani > 0
-                        ? (orijinalFiyat * (1 - urun.indirimOrani / 100)).toFixed(2)
+                    const indirimliFiyat = urun.IndirimOrani > 0
+                        ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
                         : orijinalFiyat.toFixed(2);
 
                     const toplamUrunFiyati = (indirimliFiyat * miktar).toFixed(2);
@@ -114,8 +108,17 @@ function updateUI() {
                         <div class="cart-item" style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
                             <img src="${urun.Gorsel}" alt="${urun.UrunAdi}" style="width: 50px; height: 50px; object-fit: cover;">
                             <div class="cart-item-info">
-                                <p><strong>${urun.UrunAdi}</strong></p>
-                                <p>${indirimliFiyat} TL x ${miktar}</p>
+                                <p>
+                                    <strong>${urun.UrunAdi}</strong>
+                                    ${urun.IndirimOrani > 0 ? `<span style="color: red; font-weight: bold;"> (İndirimde!)</span>` : ''}
+                                </p>
+                                <p>
+                                    ${urun.IndirimOrani > 0
+                                        ? `<span style="text-decoration: line-through; color: gray;">${(orijinalFiyat * miktar).toFixed(2)} TL</span> `
+                                        : ''
+                                    }
+                                    ${toplamUrunFiyati} TL
+                                </p>
                             </div>
                             <div class="quantity-controls">
                                 <button onclick="updateCart('${urunID}', -1)">−</button>

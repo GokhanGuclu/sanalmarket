@@ -62,7 +62,7 @@ router.get('/urunler/:kategori', async (req, res) => {
 
 router.get('/sepet', async (req, res) => {
     try {
-        const kullaniciID = 1000; // Varsayılan kullanıcı ID'si (örnek olarak 1000)
+        const kullaniciID = 1000; // Varsayılan kullanıcı ID'si
         const query = `
             SELECT 
                 SU.UrunID, 
@@ -71,7 +71,7 @@ router.get('/sepet', async (req, res) => {
                 U.UrunAdi, 
                 U.Gorsel, 
                 U.UrunFiyat AS orijinalFiyat,
-                I.IndirimOrani
+                COALESCE(I.IndirimOrani, 0) AS IndirimOrani
             FROM 
                 SepetUrunleri SU
             INNER JOIN 
@@ -79,7 +79,7 @@ router.get('/sepet', async (req, res) => {
             LEFT JOIN 
                 Indirim I ON U.UrunID = I.UrunID
             WHERE 
-                SU.SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ?)
+                SU.SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ?);
         `;
         const sepetUrunleri = await runQuery(query, [kullaniciID]);
 
@@ -102,13 +102,12 @@ router.post('/sepet', async (req, res) => {
             kullaniciID = 1000; // Varsayılan kullanıcı ID'si
         }
 
-        // 1. Kullanıcı için mevcut bir sepet var mı kontrol et
+        // 1. Mevcut sepeti kontrol et
         const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         let [sepet] = await runQuery(findCartQuery, [kullaniciID]);
 
         let sepetID;
         if (!sepet) {
-            // 2. Eğer sepet yoksa yeni bir sepet oluştur
             const createCartQuery = `
                 INSERT INTO Sepet (KullaniciID, SepetFiyat)
                 VALUES (?, 0.00);
@@ -116,40 +115,50 @@ router.post('/sepet', async (req, res) => {
             const result = await runQuery(createCartQuery, [kullaniciID]);
             sepetID = result.insertId;
         } else {
-            // Mevcut sepetin ID'sini al
             sepetID = sepet.SepetID;
         }
 
-        // 3. Ürünün fiyatını `Urun` tablosundan al
-        const getProductPriceQuery = `SELECT UrunFiyat FROM Urun WHERE UrunID = ?;`;
-        const [urun] = await runQuery(getProductPriceQuery, [urunID]);
+        // 2. Ürün fiyatını ve indirim oranını al
+        const getProductQuery = `
+            SELECT 
+                U.UrunFiyat,
+                COALESCE(I.IndirimOrani, 0) AS IndirimOrani
+            FROM 
+                Urun U
+            LEFT JOIN 
+                Indirim I ON U.UrunID = I.UrunID
+            WHERE 
+                U.UrunID = ?;
+        `;
+        const [urun] = await runQuery(getProductQuery, [urunID]);
 
         if (!urun) {
             return res.status(400).json({ success: false, message: 'Geçersiz ürün ID.' });
         }
 
-        const urunFiyat = urun.UrunFiyat;
-        const toplamFiyat = urunFiyat * urunSayisi;
+        // 3. İndirim kontrolü ve fiyat hesaplama
+        let orijinalFiyat = parseFloat(urun.UrunFiyat);
+        let indirimliFiyat = urun.IndirimOrani > 0
+            ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
+            : orijinalFiyat.toFixed(2);
 
-        // 4. Sepete ürünü ekle veya miktarını güncelle
+        const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
+
+        // 4. Sepete ekleme veya güncelleme
         const addOrUpdateProductQuery = `
             INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat)
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
-            UrunSayisi = CASE 
-                WHEN VALUES(UrunSayisi) = -1 AND UrunSayisi > 1 THEN UrunSayisi - 1
-                WHEN VALUES(UrunSayisi) = -1 AND UrunSayisi = 1 THEN UrunSayisi -- 0'da sabit kal
-                ELSE UrunSayisi + VALUES(UrunSayisi)
-            END,
-            UrunFiyat = UrunSayisi * ?;
+            UrunSayisi = UrunSayisi + VALUES(UrunSayisi),
+            UrunFiyat = VALUES(UrunFiyat);
         `;
-        await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat, urunFiyat]);
+        await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
 
-        // 5. Sepet tablosundaki toplam fiyatı güncelle
+        // 5. Toplam sepet fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
-                SELECT SUM(UrunFiyat)
+                SELECT COALESCE(SUM(UrunFiyat), 0)
                 FROM SepetUrunleri
                 WHERE SepetID = ?
             )
@@ -188,31 +197,53 @@ router.put('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
     const { delta, kullaniciID } = req.body;
 
-    // Geçersiz verileri kontrol et
     if (isNaN(urunID) || isNaN(delta)) {
         return res.status(400).json({ success: false, message: "Geçersiz urunID veya delta değeri." });
     }
 
     try {
-        // Sepet tablosundaki UrunSayisi'nı güncelle
+        const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
+        const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
+
+        if (!sepet) {
+            return res.status(400).json({ success: false, message: 'Sepet bulunamadı.' });
+        }
+
+        const sepetID = sepet.SepetID;
+
+        // Ürün fiyatını ve indirim oranını kontrol et
+        const fiyatQuery = `
+            SELECT U.UrunFiyat, COALESCE(I.IndirimOrani, 0) AS IndirimOrani
+            FROM Urun U
+            LEFT JOIN Indirim I ON U.UrunID = I.UrunID
+            WHERE U.UrunID = ?;
+        `;
+        const [urun] = await runQuery(fiyatQuery, [urunID]);
+
+        let indirimliFiyat = urun.IndirimOrani > 0
+            ? (urun.UrunFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
+            : urun.UrunFiyat.toFixed(2);
+
         const updateQuery = `
             UPDATE SepetUrunleri 
             SET UrunSayisi = UrunSayisi + ?, 
-                UrunFiyat = UrunFiyat + (SELECT UrunFiyat FROM Urun WHERE UrunID = ?) * ? 
-            WHERE UrunID = ? AND SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ?);
+                UrunFiyat = UrunSayisi * ?
+            WHERE UrunID = ? AND SepetID = ?;
         `;
-        await runQuery(updateQuery, [delta, urunID, delta, urunID, kullaniciID]);
+        await runQuery(updateQuery, [delta, indirimliFiyat, urunID, sepetID]);
 
-        // Eğer ürün miktarı sıfıra düşerse ürünü sepetten kaldır
-        const deleteQuery = `
-            DELETE FROM SepetUrunleri 
-            WHERE UrunSayisi <= 0 AND UrunID = ? AND SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ?);
+        const updateTotalQuery = `
+            UPDATE Sepet
+            SET SepetFiyat = (
+                SELECT SUM(UrunFiyat) FROM SepetUrunleri WHERE SepetID = ?
+            )
+            WHERE SepetID = ?;
         `;
-        await runQuery(deleteQuery, [urunID, kullaniciID]);
+        await runQuery(updateTotalQuery, [sepetID, sepetID]);
 
-        res.json({ success: true, message: 'Ürün miktarı güncellendi.' });
+        res.json({ success: true, message: 'Ürün güncellendi.' });
     } catch (error) {
-        console.error('Sepet güncellenirken hata oluştu:', error.message);
+        console.error('Hata:', error.message);
         res.status(500).json({ success: false, message: 'Sepet güncellenemedi.' });
     }
 });

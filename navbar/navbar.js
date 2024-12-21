@@ -36,8 +36,9 @@ function updateCartDropdown() {
     let toplamFiyat = 0;
 
     if (cartDropdown) {
-        cartDropdown.innerHTML = '';
+        cartDropdown.innerHTML = ''; // Dropdown içeriğini temizle
 
+        // Sepet boşsa mesaj göster
         if (Object.keys(sepet).length === 0) {
             cartDropdown.innerHTML = `
                 <p style="text-align: center; margin: 10px 0; color: #555; font-size: 14px;">
@@ -45,44 +46,63 @@ function updateCartDropdown() {
                 </p>
             `;
         } else {
+            // Sepetteki ürünleri listele
             Object.entries(sepet).forEach(([urunID, miktar]) => {
-                const urun = sqlUrunler.find(u => u.UrunID === parseInt(urunID));
+                const urun = sqlUrunler.find(u => u.UrunID === parseInt(urunID)); // Ürünü bul
 
                 if (urun) {
+                    // Fiyat bilgilerini hesapla
                     const orijinalFiyat = parseFloat(urun.orijinalFiyat);
                     const indirimliFiyat = urun.IndirimOrani > 0
                         ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
                         : orijinalFiyat.toFixed(2);
 
-                    const toplamUrunFiyati = (indirimliFiyat * miktar).toFixed(2);
-                    toplamFiyat += parseFloat(toplamUrunFiyati);
+                    const toplamOrijinalFiyat = (orijinalFiyat * miktar).toFixed(2); // Toplam orijinal fiyat
+                    const toplamIndirimliFiyat = (indirimliFiyat * miktar).toFixed(2); // Toplam indirimli fiyat
 
+                    toplamFiyat += parseFloat(toplamIndirimliFiyat); // Toplam fiyatı artır
+
+                    // Ürün satırını oluştur
                     const cartItem = `
-                        <div class="cart-item" style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
-                            <img src="${urun.Gorsel}" alt="${urun.UrunAdi}" style="width: 50px; height: 50px; object-fit: cover;">
-                            <div class="cart-item-info">
-                                <p><strong>${urun.UrunAdi}</strong></p>
-                                <p>${indirimliFiyat} TL x ${miktar}</p>
-                            </div>
-                            <div class="quantity-controls">
-                                <button class="quantity-btn" onclick="changeCartQuantity(${urunID}, -1)">−</button>
-                                <span class="quantity-display">${miktar}</span>
-                                <button class="quantity-btn" onclick="changeCartQuantity(${urunID}, 1)">+</button>
-                            </div>
+                    <div class="cart-item" style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                        <img src="${urun.Gorsel}" alt="${urun.UrunAdi}" style="width: 50px; height: 50px; object-fit: cover;">
+                        <div class="cart-item-info">
+                            <p>
+                                <strong>${urun.UrunAdi}</strong>
+                                ${urun.IndirimOrani > 0 
+                                    ? `<span style="color: red; font-weight: bold;"> (İndirimde!)</span>` 
+                                    : ''}
+                            </p>
+                            <p>
+                                ${urun.IndirimOrani > 0 
+                                    ? `<span style="text-decoration: line-through; color: gray;">${toplamOrijinalFiyat} TL</span> `
+                                    : ''
+                                }
+                                <strong>${toplamIndirimliFiyat} TL</strong>
+                            </p>
                         </div>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn" onclick="changeCartQuantity(${urunID}, -1)">−</button>
+                            <span class="quantity-display">${miktar}</span>
+                            <button class="quantity-btn" onclick="changeCartQuantity(${urunID}, 1)">+</button>
+                        </div>
+                    </div>
                     `;
+                    // Dropdown'a ürün ekle
                     cartDropdown.innerHTML += cartItem;
                 }
             });
 
-            // Toplam fiyat ve sepete git butonunu ekle
+            // Toplam fiyat ve sepete git butonu ekle
             const cartFooter = `
-                <div class="cart-footer" style="text-align: center; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
-                    <p class="cart-total" style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Toplam: ${toplamFiyat.toFixed(2)} TL</p>
-                    <button class="go-to-cart-btn" style="background-color: #ffc107; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;" onclick="window.location.href='/sepets/'">
-                        Sepete Git
-                    </button>
-                </div>
+            <div style="padding-top: 10px; text-align: center; margin-top: 10px;">
+                <p class="cart-total" style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+                    Toplam: ${toplamFiyat.toFixed(2)} TL
+                </p>
+                <button class="go-to-cart-btn" style="background-color: #ffc107; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;" onclick="window.location.href='/sepets/'">
+                    Sepete Git
+                </button>
+            </div>
             `;
             cartDropdown.innerHTML += cartFooter;
         }
@@ -93,7 +113,7 @@ function updateCartDropdown() {
         cartTotalElem.textContent = `${toplamFiyat.toFixed(2)} TL`;
     }
 
-    // Sepet simgesi yanındaki ürün sayısını güncelle
+    // Sepet simgesindeki ürün sayısını güncelle
     const badgeElement = document.querySelector('.badge1');
     if (badgeElement) {
         const farkliUrunSayisi = Object.keys(sepet).length;
@@ -101,7 +121,7 @@ function updateCartDropdown() {
         badgeElement.style.display = farkliUrunSayisi > 0 ? 'inline-block' : 'none';
     }
 }
-//deneme
+
 function changeCartQuantity(urunID, delta) {
     const kullaniciID = 1000; // Varsayılan kullanıcı ID'si
 
