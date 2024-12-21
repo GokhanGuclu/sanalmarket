@@ -1,11 +1,12 @@
+require('dotenv').config(); // Dotenv çağrılır
+
 const mysql = require('mysql2');
 
-// MySQL bağlantı havuzunu oluşturma
 const pool = mysql.createPool({
-    host: 'localhost',       // Veritabanı sunucu adresi
-    user: 'root',            // MySQL kullanıcı adı
-    password: 'Gokhan626353', // MySQL şifreniz
-    database: 'Sanalmarket',  // Veritabanı adı
+    host: process.env.DB_HOST,       // Ortam değişkenlerinden okunur
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
