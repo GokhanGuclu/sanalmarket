@@ -8,9 +8,7 @@ Bu proje, sanal market uygulaması için geliştirilmiş bir e-ticaret platformu
 - İndirim Sistemi
 - Gerçek Zamanlı Fiyat Güncellemeleri
 
-# Yama notu 0.7.5
-
-Sepet güncellemeleri yapıldı. Sepet kısmı navbar'da daha düzenli bir şekilde yapılıyor. SQL Apileri güncellendi. 
+# Sürüm v1.1.0 Yayında (21.12.2024)
 
 # Proje Üyeleri
 - Şükrü Yurdabak
