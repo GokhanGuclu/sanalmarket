@@ -27,9 +27,9 @@ body {
 
 .cart-content {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* Sol ve sağ kolon genişliği */
+  grid-template-columns: 2fr 1fr;
   gap: 20px;
-  align-items: start; /* Elemanlar yukarıdan hizalı */
+  align-items: start;
 }
 
 .cart-items {
@@ -46,7 +46,7 @@ body {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
-  width: 100%; /* Ürün kutusunun taşmasını önler */
+  width: 100%; 
 }
 
 .product-image {
@@ -59,7 +59,7 @@ body {
 .cart-item-details {
   flex: 1;
   margin-left: 20px;
-  overflow: hidden; /* Uzun metinlerin taşmasını önler */
+  overflow: hidden; 
 }
 
 .product-name {
@@ -117,9 +117,9 @@ body {
   border-radius: 8px;
   border: 1px solid #ddd;
   position: sticky;
-  top: 20px; /* Sağ tarafın sabit kalması için */
+  top: 20px;
   height: fit-content;
-  align-self: start; /* Grid hizalaması */
+  align-self: start; 
 }
 
 .cart-summary h2 {
@@ -156,11 +156,10 @@ body {
   background-color: #e0a800;
 }
 
-/* Taşma ve hizalama sorunu çözümü */
 .cart-content {
-  gap: 40px; /* Sağ ve sol kolonlar arasındaki boşluk artırıldı */
+  gap: 40px; 
 }
 
 .cart-items {
-  margin-bottom: 20px; /* Sağ tarafla olası çakışmaları önlemek için boşluk eklendi */
+  margin-bottom: 20px;
 }

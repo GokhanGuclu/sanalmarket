@@ -1,8 +1,8 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session'); 
-const { runQuery } = require('./sql'); // sql.js dosyasını import et
-const apiRoutes = require('./api'); // api.js dosyasını dahil et
+const { runQuery } = require('./sql'); 
+const apiRoutes = require('./api'); 
 const app = express();
 
 app.use(session({
@@ -41,11 +41,11 @@ app.post('/api/sepet', (req, res) => {
 
 app.get('/api/kullanicilar', async (req, res) => {
     try {
-        const query = 'SELECT * FROM Kullanici'; // Kullanıcı tablosundan verileri çek
+        const query = 'SELECT * FROM Kullanici';
         const kullanicilar = await runQuery(query);
         res.json(kullanicilar);
     } catch (error) {
-        console.error('Hata Detayı:', error.message); // Hata detayını logla
+        console.error('Hata Detayı:', error.message); 
         res.status(500).json({ error: 'Veritabanı hatası: Kullanıcı verileri alınamadı.' });
     }
 });

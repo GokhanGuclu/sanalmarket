@@ -1,16 +1,15 @@
-let sqlUrunler = []; // SQL'den gelen tüm ürün bilgileri
-let sepet = {}; // Global sepet nesnesi
+let sqlUrunler = []; 
+let sepet = {}; 
 
-// Sepeti sunucudan yükleme
 function loadCartFromServer() {
     return fetch('/api/sepet')
         .then((response) => response.json())
         .then((data) => {
             if (data.success) {
-                sqlUrunler = data.sepetUrunleri; // SQL'den gelen ürün bilgilerini sakla
-                sepet = {}; // Sepeti temizle ve yeniden doldur
+                sqlUrunler = data.sepetUrunleri; 
+                sepet = {}; 
                 data.sepetUrunleri.forEach((urun) => {
-                    sepet[urun.UrunID] = urun.UrunSayisi; // Sepetteki ürün miktarlarını güncelle
+                    sepet[urun.UrunID] = urun.UrunSayisi; 
                 });
             } else {
                 console.error('Sepet verileri alınamadı:', data.message);
@@ -19,18 +18,16 @@ function loadCartFromServer() {
         .catch((err) => console.error('Sepet yüklenirken hata oluştu:', err));
 }
 
-// Sepeti sunucuya kaydetme
 function saveCartToServer() {
     fetch('/api/sepet', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sepet), // Tüm sepeti gönder
+        body: JSON.stringify(sepet), 
     }).catch(err => console.error('Sepet sunucuya kaydedilirken hata oluştu:', err));
 }
 
-// Sunucudan bir ürünü kaldırma
 function deleteFromCartServer(urunID) {
     fetch(`/api/sepet/${encodeURIComponent(urunID)}`, {
         method: 'DELETE',
@@ -44,7 +41,6 @@ function updateCart(urunID, miktarDegisimi) {
         return;
     }
 
-    // İndirimli fiyatı hesapla
     const orijinalFiyat = parseFloat(urun.orijinalFiyat);
     const indirimliFiyat = urun.IndirimOrani > 0
         ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
@@ -52,7 +48,6 @@ function updateCart(urunID, miktarDegisimi) {
 
     const toplamFiyat = (indirimliFiyat * miktarDegisimi).toFixed(2);
 
-    // Sunucuya güncelleme isteği gönder
     fetch(`/api/sepet/${urunID}`, {
         method: 'PUT',
         headers: {
@@ -61,14 +56,14 @@ function updateCart(urunID, miktarDegisimi) {
         body: JSON.stringify({
             delta: miktarDegisimi,
             kullaniciID: 1000,
-            urunFiyat: toplamFiyat, // Sunucuya güncel fiyatı gönder
+            urunFiyat: toplamFiyat, 
         }),
     })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
                 console.log('Sepet güncellendi.');
-                updateUI(); // UI'yi güncelle
+                updateUI(); 
             } else {
                 console.error('Sepet güncellenemedi:', data.message);
             }
@@ -79,7 +74,7 @@ function updateCart(urunID, miktarDegisimi) {
 
 function updateUI() {
     const cartDropdown = document.getElementById('cartDropdown');
-    const cartTotalElem = document.querySelector('.cart-total1'); // Üstteki toplam fiyat
+    const cartTotalElem = document.querySelector('.cart-total1');
     let toplamFiyat = 0;
 
     if (cartDropdown) {
@@ -138,7 +133,6 @@ function updateUI() {
         }
     }
 
-    // Üstteki toplam fiyatı güncelle
     if (cartTotalElem) {
         cartTotalElem.textContent = `${toplamFiyat.toFixed(2)} TL`;
     }
@@ -146,5 +140,5 @@ function updateUI() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadCartFromServer().then(updateUI); // Sepeti yükleyip arayüzü güncelle
+    loadCartFromServer().then(updateUI); 
 });

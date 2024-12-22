@@ -1,24 +1,21 @@
-let kullaniciID = 1000; // Varsayılan olarak giriş yapmış kullanıcı ID'si (Giriş kontrolü buradan yapılacak)
+let kullaniciID = 1000; 
 
-// Navbar yükleme
 fetch('../navbar/navbar.html')
     .then(response => response.text())
     .then(data => {
         document.getElementById('navbar').innerHTML = data;
-        updateCartDropdown(); // Navbar yüklendikten sonra sepeti güncelle
+        updateCartDropdown(); 
     })
     .catch(error => console.error('Navbar yüklenirken hata oluştu:', error));
 
-// URL'den kategori adını al
 const urlPath = window.location.pathname;
 const kategoriAdi = urlPath.split('/')[2];
 
-// Ürünleri API'den çek
 if (kategoriAdi) {
     fetch(`/api/urunler/${kategoriAdi}`)
         .then(response => response.json())
         .then(urunListesi => {
-            fetch('/api/sepet') // Sepetteki ürünleri çek
+            fetch('/api/sepet')
                 .then(response => response.json())
                 .then(sepetData => {
                     const sepetUrunleri = sepetData.success ? sepetData.sepetUrunleri : [];
@@ -33,18 +30,15 @@ if (kategoriAdi) {
                             ? (orijinalFiyat * (1 - indirimOrani / 100)).toFixed(2)
                             : orijinalFiyat.toFixed(2);
 
-                        // Sepette bu ürün var mı kontrol et
                         const sepetUrunu = sepetUrunleri.find(item => item.UrunID === urun.UrunID);
                         const mevcutMiktar = sepetUrunu ? sepetUrunu.UrunSayisi : 0;
 
-                        // Ürün kartını oluştur
                         const urunDiv = document.createElement('div');
                         urunDiv.className = 'category-item';
                         urunDiv.dataset.urunId = urun.UrunID;
                         urunDiv.dataset.orijinalFiyat = orijinalFiyat;
                         urunDiv.dataset.indirimOrani = indirimOrani;
 
-                        // Giriş yapıldıysa
                         if (kullaniciID === 1000 && mevcutMiktar > 0) {
                             urunDiv.innerHTML = `
                                 ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
@@ -62,7 +56,6 @@ if (kategoriAdi) {
                                 </div>
                             `;
                         } else {
-                            // Giriş yapılmamışsa
                             urunDiv.innerHTML = `
                                 ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
                                 <img src="${urun.Gorsel}" alt="${urun.UrunAdi}">
@@ -87,7 +80,6 @@ if (kategoriAdi) {
     window.location.href = '/404/';
 }
 
-// Sepete ekleme kontrolü
 function toggleQuantityControls(button) {
     const parent = button.parentElement;
     const addToCartButton = parent.querySelector('.add-to-cart');
@@ -120,7 +112,7 @@ function toggleQuantityControls(button) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload(); // Sayfayı yenile
+                location.reload(); 
             } else {
                 alert('Ürün eklenirken hata oluştu.');
             }
@@ -143,14 +135,13 @@ function changeQuantity(button, delta) {
 
     currentQuantity += delta;
 
-    // Eğer miktar 0'dan küçük olursa işlemi durdur
     if (currentQuantity <= 0) {
         showLoadingSpinner();
         fetch(`/api/sepet/${urunID}`, { method: 'DELETE' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Sayfayı yenile
+                    location.reload();
                 } else {
                     alert('Ürün silinirken hata oluştu.');
                 }
@@ -171,8 +162,8 @@ function changeQuantity(button, delta) {
             .then(data => {
                 if (data.success) {
                     quantityDisplay.textContent = currentQuantity;
-                    location.reload(); // Sayfayı yenile
-                    updateCartDropdown(); // Navbar'ı güncelle
+                    location.reload(); 
+                    updateCartDropdown(); 
                 } else {
                     alert('Güncelleme sırasında hata oluştu.');
                 }
@@ -181,9 +172,6 @@ function changeQuantity(button, delta) {
     }
 }
 
-
-
-// Spinner işlemleri
 function showLoadingSpinner() {
     document.getElementById('loading-overlay').classList.remove('hidden');
 }

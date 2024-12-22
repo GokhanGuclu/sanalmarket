@@ -6,12 +6,6 @@ fetch('../navbar/navbar.html')
 .catch(error => console.error('Navbar yüklenirken hata oluştu:', error));
 
 
-/*if (window.location.pathname === '/anasayfa/') {
-    window.history.pushState({}, '', '/home/');
-}
-
-*/
-
 function checkLoginStatus() {
     fetch('/api/check-login')
         .then(res => res.json())

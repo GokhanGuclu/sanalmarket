@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {runQuery, checkUser, addUser } = require('./sql');
 
-// Giriş Yapma Endpoint'i
+// ------------------ // GİRİŞ KAYIT APİSİ // ------------------ //
 router.post('/login', async (req, res) => {
     const { mail, password } = req.body;
     try {
@@ -21,7 +21,6 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
     const { ad, soyad, mail, telefon, password } = req.body;
 
-    // Tüm alanların geldiğinden emin ol
     if (!ad || !soyad || !mail || !telefon || !password) {
         return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
     }
@@ -35,7 +34,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-
+// ------------------ // ÜRÜN ÇEKME APİSİ // ------------------ //
 router.get('/urunler/:kategori', async (req, res) => {
     const kategori = req.params.kategori;
 
@@ -52,17 +51,80 @@ router.get('/urunler/:kategori', async (req, res) => {
             WHERE 
                 Urun.Kategori = ?;
         `;
-        const urunler = await runQuery(query, [kategori]); // Kategoriye göre ürünleri çek
-        res.json(urunler); // Ürünleri JSON formatında gönder
+        const urunler = await runQuery(query, [kategori]); 
+        res.json(urunler); 
     } catch (error) {
         console.error('Veritabanı hatası:', error.message);
         res.status(500).json({ error: 'Ürünler alınırken bir hata oluştu.' });
     }
 });
 
+// ------------------ // ADRES ÇEKME APİSİ // ------------------ //
+router.get('/adresler', async (req, res) => {
+    const kullaniciID = 1000; 
+
+    try {
+        const query = `
+            SELECT 
+                AdresID, 
+                AdresBaslik, 
+                AdresAciklama, 
+                Sehir, 
+                Ilce, 
+                SecilenAdres
+            FROM 
+                Adres
+            WHERE 
+                KullaniciID = ?
+            ORDER BY 
+                SecilenAdres DESC; -- Seçilen adres en başa gelsin
+        `;
+
+        const adresler = await runQuery(query, [kullaniciID]);
+
+        if (adresler.length > 0) {
+            res.json({ success: true, adresler });
+        } else {
+            res.json({ success: false, message: 'Adres bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Adresler çekilirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres verileri alınamadı.' });
+    }
+});
+
+// ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
+router.put('/adresler/secilen', async (req, res) => {
+    const { adresID, kullaniciID } = req.body; 
+
+    try {
+        const resetQuery = `
+            UPDATE Adres
+            SET SecilenAdres = false
+            WHERE KullaniciID = ?;
+        `;
+        await runQuery(resetQuery, [kullaniciID]);
+
+        const updateQuery = `
+            UPDATE Adres
+            SET SecilenAdres = true
+            WHERE AdresID = ? AND KullaniciID = ?;
+        `;
+        await runQuery(updateQuery, [adresID, kullaniciID]);
+
+        res.json({ success: true, message: 'Adres güncellendi.' });
+    } catch (error) {
+        console.error('Varsayılan adres güncellenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres güncellenemedi.' });
+    }
+});
+
+
+
+// ------------------ // SEPET ÇEKME APİSİ // ------------------ //
 router.get('/sepet', async (req, res) => {
     try {
-        const kullaniciID = 1000; // Varsayılan kullanıcı ID'si
+        const kullaniciID = 1000; 
         const query = `
             SELECT 
                 SU.UrunID, 
@@ -94,15 +156,15 @@ router.get('/sepet', async (req, res) => {
     }
 });
 
+// ------------------ // SEPETE VERİ GÖNDERME APİSİ // ------------------ //
 router.post('/sepet', async (req, res) => {
     let { kullaniciID, urunID, urunSayisi } = req.body;
 
     try {
         if (!kullaniciID) {
-            kullaniciID = 1000; // Varsayılan kullanıcı ID'si
+            kullaniciID = 1000; 
         }
 
-        // 1. Mevcut sepeti kontrol et
         const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         let [sepet] = await runQuery(findCartQuery, [kullaniciID]);
 
@@ -118,7 +180,6 @@ router.post('/sepet', async (req, res) => {
             sepetID = sepet.SepetID;
         }
 
-        // 2. Ürün fiyatını ve indirim oranını al
         const getProductQuery = `
             SELECT 
                 U.UrunFiyat,
@@ -136,7 +197,6 @@ router.post('/sepet', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Geçersiz ürün ID.' });
         }
 
-        // 3. İndirim kontrolü ve fiyat hesaplama
         let orijinalFiyat = parseFloat(urun.UrunFiyat);
         let indirimliFiyat = urun.IndirimOrani > 0
             ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
@@ -144,7 +204,6 @@ router.post('/sepet', async (req, res) => {
 
         const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
 
-        // 4. Sepete ekleme veya güncelleme
         const addOrUpdateProductQuery = `
             INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat)
             VALUES (?, ?, ?, ?)
@@ -154,7 +213,6 @@ router.post('/sepet', async (req, res) => {
         `;
         await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
 
-        // 5. Toplam sepet fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
@@ -173,12 +231,12 @@ router.post('/sepet', async (req, res) => {
     }
 });
 
+
+// ------------------ // SEPETTEKİ ÜRÜNÜ SİLME APİSİ // ------------------ //
 router.delete('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
-    const kullaniciID = 1000; // Sabit kullanıcı ID'si
-
+    const kullaniciID = 1000; 
     try {
-        // 1. Sepet ID'sini al
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
 
@@ -188,11 +246,9 @@ router.delete('/sepet/:urunID', async (req, res) => {
 
         const sepetID = sepet.SepetID;
 
-        // 2. Ürünü sil
         const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
         await runQuery(deleteQuery, [urunID, sepetID]);
 
-        // 3. Toplam sepet fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
@@ -211,12 +267,12 @@ router.delete('/sepet/:urunID', async (req, res) => {
     }
 });
 
+// ------------------ // SEPETTE ÜRÜN GÜNCELLEME APİSİ // ------------------ //
 router.put('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
     const { delta, kullaniciID } = req.body;
 
     try {
-        // 1. Sepet ID'sini al
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
 
@@ -226,7 +282,6 @@ router.put('/sepet/:urunID', async (req, res) => {
 
         const sepetID = sepet.SepetID;
 
-        // 2. Ürün kontrolü
         const getProductQuery = `
             SELECT SU.UrunSayisi, U.UrunFiyat, COALESCE(I.IndirimOrani, 0) AS IndirimOrani
             FROM SepetUrunleri SU
@@ -242,7 +297,6 @@ router.put('/sepet/:urunID', async (req, res) => {
 
         let yeniMiktar = urun.UrunSayisi + delta;
 
-        // Fiyat hesapla
         const orijinalFiyat = parseFloat(urun.UrunFiyat);
         let indirimliFiyat = urun.IndirimOrani > 0
             ? (orijinalFiyat * (1 - urun.IndirimOrani / 100))
@@ -280,12 +334,12 @@ router.put('/sepet/:urunID', async (req, res) => {
     }
 });
 
+// ------------------ // SEPETE ÜRÜN EKLEME APİSİ // ------------------ //
 router.post('/sepet/ekle/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
     const { kullaniciID, urunSayisi } = req.body;
 
     try {
-        // 1. Sepet ID'sini al veya oluştur
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         let [sepet] = await runQuery(sepetQuery, [kullaniciID]);
 
@@ -296,12 +350,11 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
                 VALUES (?, 0.00);
             `;
             const result = await runQuery(createCartQuery, [kullaniciID]);
-            sepetID = result.insertId; // Yeni oluşturulan sepet ID'si
+            sepetID = result.insertId;
         } else {
-            sepetID = sepet.SepetID; // Mevcut sepet ID'si
+            sepetID = sepet.SepetID;
         }
 
-        // 2. Ürün bilgilerini al
         const getProductQuery = `
             SELECT U.UrunFiyat, COALESCE(I.IndirimOrani, 0) AS IndirimOrani
             FROM Urun U
@@ -314,7 +367,6 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Geçersiz ürün ID.' });
         }
 
-        // 3. İndirim kontrolü ve fiyat hesaplama
         const orijinalFiyat = parseFloat(urun.UrunFiyat);
         const indirimliFiyat = urun.IndirimOrani > 0
             ? (orijinalFiyat * (1 - urun.IndirimOrani / 100))
@@ -322,7 +374,6 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
 
         const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
 
-        // 4. Sepete ürünü ekle veya güncelle
         const addOrUpdateProductQuery = `
             INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat)
             VALUES (?, ?, ?, ?)
@@ -332,7 +383,6 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
         `;
         await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
 
-        // 5. Sepet toplam fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (

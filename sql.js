@@ -1,9 +1,9 @@
-require('dotenv').config(); // Dotenv çağrılır
+require('dotenv').config(); 
 
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,       // Ortam değişkenlerinden okunur
+    host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
@@ -12,10 +12,8 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Sorguları çalıştırmak için bir "promise" wrapper
 const promisePool = pool.promise();
 
-// Kullanıcı doğrulama fonksiyonu
 async function checkUser(mail, password) {
     const query = 'SELECT * FROM Kullanici WHERE mail = ? AND sifre = ?';
     const rows = await runQuery(query, [mail, password]);
@@ -26,7 +24,6 @@ async function addUser(ad, soyad, mail, telefon, password) {
     await runQuery(query, [ad, soyad, mail, telefon, password]);
 }
 
-// Genel sorgu çalıştırma fonksiyonu
 async function runQuery(query, values = []) {
     try {
         const [rows] = await promisePool.query(query, values);

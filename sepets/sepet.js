@@ -2,35 +2,29 @@ function updatePrice(button, unitPrice, change) {
     const quantityDisplay = button.parentElement.querySelector(".quantity-display");
     let quantity = parseInt(quantityDisplay.textContent);
 
-    // Miktarı artır veya azalt
     quantity += change;
-    if (quantity < 1) quantity = 1; // Minimum 1 ürün
+    if (quantity < 1) quantity = 1; 
 
-    // Arayüzü güncelle
     quantityDisplay.textContent = quantity;
 
-    // Ürün fiyatını güncelle
     const priceElement = button.closest(".cart-item-controls").querySelector(".product-price");
     const newPrice = (unitPrice * quantity).toFixed(2);
     priceElement.textContent = `${newPrice} TL`;
 
-    // Ürün ID'sini al
     const cartItem = button.closest(".cart-item-box");
-    const urunID = cartItem.dataset.urunId; // HTML'de `data-urun-id` attribute'u olmalı
+    const urunID = cartItem.dataset.urunId; 
 
-    // `changeCartQuantity` ile veritabanını ve diğer işlemleri güncelle
     changeCartQuantity(urunID, change);
 }
 
 function changeCartQuantity(urunID, delta) {
-    const kullaniciID = 1000; // Varsayılan kullanıcı ID'si
+    const kullaniciID = 1000;
 
     if (delta === 0) {
         console.warn('Delta sıfır olamaz.');
         return;
     }
 
-    // SQL Veritabanını güncelle
     fetch(`/api/sepet/${urunID}`, {
         method: 'PUT',
         headers: {
@@ -43,7 +37,6 @@ function changeCartQuantity(urunID, delta) {
             if (data.success) {
                 console.log('Ürün miktarı başarıyla güncellendi:', data);
 
-                // Toplam fiyatı güncelle
                 updateTotalPrice();
             } else {
                 console.error('Ürün miktarı güncellenirken hata:', data.message);
@@ -69,9 +62,9 @@ function updateTotalPrice() {
 }
 
 function updateCartPage() {
-    const cartContainer = document.querySelector('.cart-items'); // Sepet öğelerinin bulunduğu alan
-    const totalPriceElem = document.getElementById('total-price'); // Toplam fiyat gösterim alanı
-    const payablePriceElem = document.getElementById('payable-price'); // Ödenecek fiyat alanı
+    const cartContainer = document.querySelector('.cart-items'); 
+    const totalPriceElem = document.getElementById('total-price'); 
+    const payablePriceElem = document.getElementById('payable-price');
     let toplamFiyat = 0;
 
     if (!cartContainer) {
@@ -79,10 +72,9 @@ function updateCartPage() {
         return;
     }
 
-    cartContainer.innerHTML = ''; // Mevcut içeriği temizle
+    cartContainer.innerHTML = ''; 
 
     if (!sqlUrunler || sqlUrunler.length === 0) {
-        // Eğer ürün yoksa
         cartContainer.innerHTML = `
             <p style="text-align: center; margin: 20px 0; color: #555; font-size: 16px;">
                 Sepetiniz Boş
@@ -90,7 +82,6 @@ function updateCartPage() {
         `;
     } else {
         sqlUrunler.forEach((urun) => {
-            // İndirim kontrolü
             const indirimliFiyat = urun.IndirimOrani > 0
                 ? (urun.orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
                 : parseFloat(urun.orijinalFiyat).toFixed(2);
@@ -99,7 +90,6 @@ function updateCartPage() {
             const orijinalToplamFiyat = (urun.orijinalFiyat * urun.UrunSayisi).toFixed(2);
             toplamFiyat += parseFloat(toplamUrunFiyati);
 
-            // HTML içeriği oluşturma
             const cartItemHTML = `
                 <div class="cart-item-box" data-urun-id="${urun.UrunID}">
                     <img src="${urun.Gorsel}" alt="${urun.UrunAdi}" class="product-image">
@@ -130,14 +120,12 @@ function updateCartPage() {
         });
     }
 
-    // Toplam fiyatı güncelle
     if (totalPriceElem && payablePriceElem) {
         totalPriceElem.textContent = `${toplamFiyat.toFixed(2)} TL`;
         payablePriceElem.textContent = `${toplamFiyat.toFixed(2)} TL`;
     }
 }
 
-// Backend'den sepet verilerini yükle ve sayfayı güncelle
 document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/sepet')
         .then((response) => response.json())
