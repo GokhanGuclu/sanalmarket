@@ -1,3 +1,11 @@
+fetch('../navbar/navbar.html')
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById('navbar').innerHTML = data;
+        updateCartDropdown(); 
+    })
+    .catch(error => console.error('Navbar yüklenirken hata oluştu:', error));
+    
 function updatePrice(button, unitPrice, change) {
     const quantityDisplay = button.parentElement.querySelector(".quantity-display");
     let quantity = parseInt(quantityDisplay.textContent);

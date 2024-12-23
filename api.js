@@ -93,6 +93,42 @@ router.get('/adresler', async (req, res) => {
     }
 });
 
+// ------------------ // ARAMA YAPARAK ÜRÜN ÇEKME APİSİ // ------------------ //
+router.get('/ara/urun', async (req, res) => {
+    const { arama } = req.query; // Arama parametresini al
+
+    if (!arama) {
+        return res.status(400).json({ success: false, message: 'Arama terimi belirtilmedi.' });
+    }
+
+    try {
+        // SQL sorgusu - Ürün adı veya açıklamasında arama yap
+        const query = `
+            SELECT 
+                UrunID,
+                Kategori,
+                UrunFiyat,
+                Gorsel,
+                UrunAdi,
+                Stok,
+                Aciklama
+            FROM 
+                Urun
+            WHERE 
+                UrunAdi LIKE ? OR Aciklama LIKE ?;
+        `;
+
+        const aramaTerimi = `%${arama}%`; // SQL'de LIKE için gerekli format
+        const urunler = await runQuery(query, [aramaTerimi, aramaTerimi]);
+
+        res.json({ success: true, urunler });
+    } catch (error) {
+        console.error('Arama sırasında hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Ürünler aranırken bir hata oluştu.' });
+    }
+});
+
+
 // ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
 router.put('/adresler/secilen', async (req, res) => {
     const { adresID, kullaniciID } = req.body; 

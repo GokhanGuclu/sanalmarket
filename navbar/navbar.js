@@ -26,8 +26,7 @@ function updateAddressDropdown(adresler) {
             </p>
         `;
     } else {
-        // Tüm adresleri sıralamaya gerek yok, API zaten sıralı döndürecek.
-        const varsayilanAdres = adresler[0]; // API ilk sırada seçiliyi gönderiyor.
+        const varsayilanAdres = adresler[0]; 
 
         adresler.forEach(adres => {
 
@@ -39,7 +38,6 @@ function updateAddressDropdown(adresler) {
             `;
         });
 
-        // Varsayılan adresi ekrana yazdır
         if (selectedAddress) {
             const kisaVarsayilan = varsayilanAdres.AdresBaslik.length > 8
                 ? varsayilanAdres.AdresBaslik.slice(0, 6) + '...' 
@@ -59,25 +57,22 @@ function updateAddressDropdown(adresler) {
 function selectAddress(adres) {
     const selectedAddress = document.getElementById('selected-address');
 
-    // Adres başlığını kontrol edip kısalt
     const kisaBaslik = adres.AdresBaslik.length > 8 
         ? adres.AdresBaslik.slice(0, 6) + '...' 
         : adres.AdresBaslik;
 
-    // Seçili adresi ekranda göster
     if (selectedAddress) {
         selectedAddress.innerHTML = `
             Teslimat Adresi: <strong>${kisaBaslik}</strong>
         `;
     }
 
-    // API'ye seçilen adresi bildir
     fetch('/api/adresler/secilen', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ adresID: adres.AdresID, kullaniciID: 1000 }), // Kullanıcı ID statik örnek
+        body: JSON.stringify({ adresID: adres.AdresID, kullaniciID: 1000 }), 
     })
     .then(response => response.json())
     .then(data => {
