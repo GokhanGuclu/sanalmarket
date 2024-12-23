@@ -1,4 +1,17 @@
-let kullaniciID = 1000; 
+let kullaniciID = null; 
+
+fetch('/api/kullanici')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            kullaniciID = data.kullaniciID; 
+        } else {
+            console.log('Kullanıcı girişi yapılmamış.');
+        }
+    })
+    .catch(error => console.error('Kullanıcı bilgisi alınırken hata oluştu:', error));
+
+
 
 fetch('../navbar/navbar.html')
     .then(response => response.text())
@@ -39,7 +52,7 @@ if (kategoriAdi) {
                         urunDiv.dataset.orijinalFiyat = orijinalFiyat;
                         urunDiv.dataset.indirimOrani = indirimOrani;
 
-                        if (kullaniciID === 1000 && mevcutMiktar > 0) {
+                        if (kullaniciID !== null && mevcutMiktar > 0) {
                             urunDiv.innerHTML = `
                                 ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
                                 <img src="${urun.Gorsel}" alt="${urun.UrunAdi}">
@@ -80,13 +93,17 @@ if (kategoriAdi) {
     window.location.href = '/404/';
 }
 
+
 function toggleQuantityControls(button) {
     const parent = button.parentElement;
-    const addToCartButton = parent.querySelector('.add-to-cart');
-
     const urunID = parseInt(parent.dataset.urunId);
     const orijinalFiyat = parseFloat(parent.dataset.orijinalFiyat);
     const indirimOrani = parseFloat(parent.dataset.indirimOrani) || 0;
+
+    if (kullaniciID === null) {
+        showBox();
+        return;
+    }
 
     if (isNaN(urunID) || isNaN(orijinalFiyat)) {
         alert('Ürün bilgileri eksik. Sayfayı yenileyin.');
@@ -103,22 +120,39 @@ function toggleQuantityControls(button) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            kullaniciID: 1000,
+            kullaniciID: kullaniciID,  
             urunID: urunID,
             urunSayisi: 1,
             urunFiyat: indirimliFiyat
         }),
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload(); 
-            } else {
-                alert('Ürün eklenirken hata oluştu.');
-            }
-        })
-        .finally(() => hideLoadingSpinner());
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); 
+        } else {
+            alert('Ürün eklenirken hata oluştu.');
+        }
+    })
+    .finally(() => hideLoadingSpinner());
 }
+
+function showBox() {
+    document.getElementById('loginWarningBox').style.display = 'flex';
+};
+
+function hideBox() {
+    document.getElementById('loginWarningBox').style.display = 'none';
+};
+
+document.getElementById('cancelButton').addEventListener('click', () => {
+    hideBox();
+});
+
+document.getElementById('loginButton').addEventListener('click', () => {
+    window.location.href = '/giriskayit';
+});
+
 
 function changeQuantity(button, delta) {
     const quantityDisplay = button.parentElement.querySelector('.quantity-display-item');

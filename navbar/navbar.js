@@ -1,3 +1,17 @@
+let kullaniciID = null;
+
+fetch('/api/kullanici')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            kullaniciID = data.kullaniciID; 
+        } else {
+            console.log('Kullanıcı girişi yapılmamış.');
+        }
+    })
+    .catch(error => console.error('Kullanıcı bilgisi alınırken hata oluştu:', error));
+
+
 document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/adresler')
         .then(response => response.json())
@@ -87,13 +101,6 @@ function selectAddress(adres) {
     });
 }
 
-
-function toggleAddressDropdown() {
-    const dropdown = document.getElementById('addressDropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-}
-
-
 function updateCartDropdown() {
     const cartDropdown = document.getElementById('cartDropdown');
     const cartTotalElem = document.querySelector('.cart-total1'); 
@@ -178,7 +185,6 @@ function updateCartDropdown() {
 }
 
 function changeCartQuantity(urunID, delta) {
-    const kullaniciID = 1000; 
 
     if (delta === 0) {
         console.warn('Delta sıfır olamaz.');
@@ -257,13 +263,6 @@ function navbartoggleCartDropdown() {
     }
 }
 
-function toggleAddressDropdown() {
-    const dropdown = document.getElementById('addressDropdown');
-    if (dropdown) {
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    }
-}
-
 function showLoadingSpinner() {
     document.getElementById('loading-overlay').classList.remove('hidden');
 }
@@ -271,3 +270,30 @@ function showLoadingSpinner() {
 function hideLoadingSpinner() {
     document.getElementById('loading-overlay').classList.add('hidden');
 }
+
+function toggleAddressDropdown() {
+    navbarshowBox();
+    
+    if (kullaniciID === null) {
+        navbarshowBox();
+        return;
+    }
+    const dropdown = document.getElementById('addressDropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+function navbarshowBox() {
+    document.getElementById('loginWarningBoxnavbar').style.display = 'flex';
+};
+
+function navbarhideBox() {
+    document.getElementById('loginWarningBoxnavbar').style.display = 'none';
+};
+
+document.getElementById('cancelButtonnavbar').addEventListener('click', () => {
+    navbarhideBox();
+});
+
+document.getElementById('loginButtonnavbar').addEventListener('click', () => {
+    window.location.href = '/giriskayit';
+});

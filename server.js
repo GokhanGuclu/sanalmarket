@@ -6,10 +6,15 @@ const apiRoutes = require('./api');
 const app = express();
 
 app.use(session({
-    secret: 'secret-key',
+    secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
+    cookie: { 
+        secure: false,  // Geliştirme ortamında false, prodüksiyon ortamında true olmalı
+        maxAge: 24 * 60 * 60 * 1000  // 1 gün (24 saat) = 86400000 milisaniye
+    }
 }));
+
 
 app.use(express.static(path.join(__dirname)));
 

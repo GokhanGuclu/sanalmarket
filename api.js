@@ -8,6 +8,7 @@ router.post('/login', async (req, res) => {
     try {
         const user = await checkUser(mail, password);
         if (user.length > 0) {
+            req.session.userID = user[0].KullaniciID;
             res.json({ success: true, user: user[0] });
         } else {
             res.json({ success: false, message: 'Kullanıcı adı veya şifre hatalı!' });
@@ -15,6 +16,22 @@ router.post('/login', async (req, res) => {
     } catch (err) {
         console.error('Giriş hatası:', err.message);
         res.status(500).send({ success: false, message: 'Sunucu hatası, giriş başarısız.' });
+    }
+});
+
+router.get('/api/kullanici', (req, res) => {
+    if (req.session.kullaniciID) {
+        res.json({ success: true, kullaniciID: req.session.kullaniciID });
+    } else {
+        res.json({ success: false, message: 'Kullanıcı girişi yapılmamış.' });
+    }
+});
+
+router.get('/kullanici', (req, res) => {
+    if (req.session.kullaniciID) {
+        res.json({ success: true, kullaniciID: req.session.kullaniciID });
+    } else {
+        res.json({ success: false, message: 'Kullanıcı girişi yapılmamış.' });
     }
 });
 
@@ -61,7 +78,7 @@ router.get('/urunler/:kategori', async (req, res) => {
 
 // ------------------ // ADRES ÇEKME APİSİ // ------------------ //
 router.get('/adresler', async (req, res) => {
-    const kullaniciID = 1000; 
+    const kullaniciID = req.session.userID;
 
     try {
         const query = `
@@ -160,7 +177,7 @@ router.put('/adresler/secilen', async (req, res) => {
 // ------------------ // SEPET ÇEKME APİSİ // ------------------ //
 router.get('/sepet', async (req, res) => {
     try {
-        const kullaniciID = 1000; 
+        const kullaniciID = req.session.userID; 
         const query = `
             SELECT 
                 SU.UrunID, 
@@ -198,7 +215,7 @@ router.post('/sepet', async (req, res) => {
 
     try {
         if (!kullaniciID) {
-            kullaniciID = 1000; 
+            kullaniciID = req.session.userID; 
         }
 
         const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
@@ -271,7 +288,7 @@ router.post('/sepet', async (req, res) => {
 // ------------------ // SEPETTEKİ ÜRÜNÜ SİLME APİSİ // ------------------ //
 router.delete('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
-    const kullaniciID = 1000; 
+    const kullaniciID = req.session.userID; 
     try {
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         const [sepet] = await runQuery(sepetQuery, [kullaniciID]);

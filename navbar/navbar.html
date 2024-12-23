@@ -2,7 +2,7 @@
     <div style="position: relative; display: inline-block;">
         <button class="nav-item1" onclick="toggleAddressDropdown()">
             <i class="icon1">📍</i>
-            <span id="selected-address">Teslimat Adresi: <strong>Yükleniyor...</strong></span>
+            <span id="selected-address"><strong>Giriş Yapılmadı</strong></span>
         </button>
 
         <div class="address-dropdown" id="addressDropdown">
@@ -41,6 +41,15 @@
     </div>
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="spinner"></div>
+    </div>
+    <div id="loginWarningBoxnavbar" class="hiddenboxnavbar">
+        <div class="messageboxnavbar">
+            <p>Giriş yapmadan adres değişikliği yapamazsınız!</p>
+            <div class="buttoncontainernavbar">
+                <button id="cancelButtonnavbar">Vazgeç</button>
+                <button id="loginButtonnavbar">Giriş Yap</button>
+            </div>
+        </div>
     </div>
     <script src="/sepet.js"></script>
 </header>
