@@ -78,7 +78,7 @@ router.get('/urunler/:kategori', async (req, res) => {
 
 // ------------------ // ADRES ÇEKME APİSİ // ------------------ //
 router.get('/adresler', async (req, res) => {
-    const kullaniciID = req.session.userID;
+    const kullaniciID = req.session.userID || 1000;
 
     try {
         const query = `
@@ -145,12 +145,31 @@ router.get('/ara/urun', async (req, res) => {
     }
 });
 
+router.post('/adresler', async (req, res) => {
+    const { adresBaslik, adresAciklama, sehir, ilce } = req.body;
+    const kullaniciID = req.session.userID || 1000; // Oturumdaki kullanıcı ID
 
-// ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
-router.put('/adresler/secilen', async (req, res) => {
-    const { adresID, kullaniciID } = req.body; 
+    // Zorunlu alanları kontrol et
+    if (!adresBaslik || !adresAciklama || !sehir || !ilce) {
+        return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
+    }
 
     try {
+        // 1. Adres sayısını kontrol et
+        const countQuery = `
+            SELECT COUNT(*) AS adresSayisi
+            FROM Adres
+            WHERE KullaniciID = ?;
+        `;
+        const result = await runQuery(countQuery, [kullaniciID]);
+        const adresSayisi = result[0].adresSayisi;
+
+        // Maksimum 5 adres kontrolü
+        if (adresSayisi >= 5) {
+            return res.status(400).json({ success: false, message: 'En fazla 5 adres ekleyebilirsiniz.' });
+        }
+
+        // 2. Diğer adresleri seçilmemiş yap
         const resetQuery = `
             UPDATE Adres
             SET SecilenAdres = false
@@ -158,6 +177,82 @@ router.put('/adresler/secilen', async (req, res) => {
         `;
         await runQuery(resetQuery, [kullaniciID]);
 
+        // 3. Yeni adresi ekle ve seçilen yap
+        const insertQuery = `
+            INSERT INTO Adres (KullaniciID, AdresBaslik, AdresAciklama, Sehir, Ilce, SecilenAdres)
+            VALUES (?, ?, ?, ?, ?, true);
+        `;
+        await runQuery(insertQuery, [kullaniciID, adresBaslik, adresAciklama, sehir, ilce]);
+
+        res.json({ success: true, message: 'Adres başarıyla eklendi.' });
+    } catch (error) {
+        console.error('Adres eklerken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres eklenemedi.' });
+    }
+});
+
+
+
+router.put('/adresler/:adresID', async (req, res) => {
+    const adresID = req.params.adresID; // Güncellenecek adres ID'si
+    const { adresBaslik, adresAciklama, sehir, ilce } = req.body; // Güncellenecek bilgiler
+
+    if (!adresBaslik || !adresAciklama || !sehir || !ilce) {
+        return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
+    }
+
+    try {
+        const query = `
+            UPDATE Adres
+            SET AdresBaslik = ?, AdresAciklama = ?, Sehir = ?, Ilce = ?
+            WHERE AdresID = ?;
+        `;
+        await runQuery(query, [adresBaslik, adresAciklama, sehir, ilce, adresID]);
+
+        res.json({ success: true, message: 'Adres başarıyla güncellendi.' });
+    } catch (error) {
+        console.error('Adres güncellenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres güncellenemedi.' });
+    }
+});
+
+router.delete('/adresler/:adresID', async (req, res) => {
+    const adresID = req.params.adresID; // Silinecek adres ID'si
+
+    try {
+        const query = `
+            DELETE FROM Adres
+            WHERE AdresID = ?;
+        `;
+        const result = await runQuery(query, [adresID]);
+
+        if (result.affectedRows > 0) {
+            res.json({ success: true, message: 'Adres başarıyla silindi.' });
+        } else {
+            res.status(404).json({ success: false, message: 'Adres bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Adres silinirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres silinemedi.' });
+    }
+});
+
+
+// ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
+router.put('/adresler/secilen', async (req, res) => {
+    const { adresID } = req.body; // Seçilen adresin ID'si
+    const kullaniciID = req.session.userID || 1000; // Oturumdaki kullanıcı ID
+
+    try {
+        // Tüm adreslerin seçilen değerini sıfırla
+        const resetQuery = `
+            UPDATE Adres
+            SET SecilenAdres = false
+            WHERE KullaniciID = ?;
+        `;
+        await runQuery(resetQuery, [kullaniciID]);
+
+        // Seçilen adresi güncelle
         const updateQuery = `
             UPDATE Adres
             SET SecilenAdres = true
@@ -165,12 +260,13 @@ router.put('/adresler/secilen', async (req, res) => {
         `;
         await runQuery(updateQuery, [adresID, kullaniciID]);
 
-        res.json({ success: true, message: 'Adres güncellendi.' });
+        res.json({ success: true, message: 'Seçilen adres başarıyla güncellendi.' });
     } catch (error) {
-        console.error('Varsayılan adres güncellenirken hata oluştu:', error.message);
-        res.status(500).json({ success: false, message: 'Adres güncellenemedi.' });
+        console.error('Seçilen adres güncellenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Seçilen adres güncellenemedi.' });
     }
 });
+
 
 
 

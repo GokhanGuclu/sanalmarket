@@ -1,0 +1,137 @@
+/* Genel Ayarlar */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    display: flex;
+    justify-content: center; /* Sayfa yatayda ortalanır */
+    align-items: center;    /* Sayfa dikeyde ortalanır */
+    height: 100vh;          /* Tam sayfa yüksekliği */
+}
+
+.container {
+    display: flex;
+    width: 80%;            /* Ortalamak için genişlik sınırı */
+    max-width: 1200px;     /* Çok büyük ekranlarda daha dar olması için */
+    min-height: 80%;       /* Yükseklik sınırı */
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Hafif gölge efekti */
+    overflow: hidden;      /* Taşan öğeler kesilir */
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    background-color: #f7f7f7;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.user-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.user-info img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.user-info h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.user-info p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 5px 0;
+}
+
+.money-info {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.money-info .money-card {
+    background-color: #ffd700;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.money-info a {
+    text-decoration: none;
+    font-size: 0.9rem;
+    color: #007bff;
+}
+
+.menu {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+}
+
+.menu li {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+}
+
+.menu li i {
+    margin-right: 10px;
+    font-size: 1rem;
+}
+
+.menu li:hover, .menu li.active {
+    background-color: #ffd700;
+    color: #333;
+}
+.menu li.active {
+    background-color: #f0f0f0; /* Aktif menü öğesi arka plan rengi */
+    color: #333; /* Aktif öğe metin rengi */
+}
+
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    text-align: center;
+}
+
+.footer p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.footer .logout {
+    text-decoration: none;
+    color: #ff4d4d;
+    margin-top: 10px;
+    display: block;
+}
+
+/* İçerik Alanı */
+.content {
+    flex: 1;
+    padding: 20px;
+    background-color: #fff;
+}
+
+.content h1 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+}
+

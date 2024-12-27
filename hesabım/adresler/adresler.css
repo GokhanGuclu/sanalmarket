@@ -1,0 +1,157 @@
+
+.address-section {
+    margin-top: 20px;
+}
+
+.add-address {
+    background-color: #ffd700;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.address-card {
+    display: flex;
+    align-items: center;  /* Dikey hizalama */
+    justify-content: space-between;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #f7f7f7;
+    border: 1px solid #ddd;
+}
+
+.address-card h3 {
+    margin: 0;
+    font-size: 1rem;
+    width: 150px; /* Sabit genişlik ayarlandı */
+    font-weight: bold;
+    text-align: left; /* Metni sola hizala */
+}
+
+.address-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+    flex-grow: 1; /* Adres açıklaması kalan alanı doldurur */
+    padding-left: 10px; /* Başlıktan sonra boşluk ekler */
+    text-align: left;  /* Metni sola hizala */
+    overflow-wrap: break-word; /* Uzun kelimeleri bölerek satıra sığdırır */
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+
+.address-card .actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.address-card .actions button i {
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.address-card .actions button:hover i {
+    color: #007bff;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.edit-form {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    width: 450px; /* Genişlik biraz artırıldı */
+    font-family: 'Arial', sans-serif;
+
+    /* Formu ortalamak için eklenen yeni stiller */
+    margin: 0 auto; /* Ortalamak için */
+    box-sizing: border-box; /* Padding ve border dahil */
+}
+
+.edit-form h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    text-align: center; /* Başlık ortalandı */
+}
+
+.edit-form label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 500;
+    color: #555;
+}
+
+.edit-form input, .edit-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.edit-form input:focus, .edit-form textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.edit-form button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.edit-form button:first-of-type {
+    background: #28a745;
+    color: #fff;
+}
+
+.edit-form button:first-of-type:hover {
+    background: #218838;
+}
+
+.edit-form button:last-of-type {
+    background: #dc3545;
+    color: #fff;
+}
+
+.edit-form button:last-of-type:hover {
+    background: #c82333;
+}

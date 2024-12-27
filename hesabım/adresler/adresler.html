@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="adresler.css">
+
+<h1>Adreslerim</h1>
+<div class="address-section">
+    <button class="add-address">+ Yeni Teslimat Adresi Ekle</button>
+    <div class="address-card">
+        
+    </div>
+</div>
+
+<div id="editBox" class="overlay" style="display: none;">
+    <div class="edit-form">
+        <h2>Adresi Düzenle</h2>
+        <label for="editBaslik">Adres Başlığı:</label>
+        <input type="text" id="editBaslik">
+
+        <label for="editAciklama">Adres Açıklaması:</label>
+        <textarea id="editAciklama"></textarea>
+
+        <label for="editSehir">Şehir:</label>
+        <input type="text" id="editSehir">
+
+        <label for="editIlce">İlçe:</label>
+        <input type="text" id="editIlce">
+
+        <div class="form-buttons">
+            <button onclick="saveEdit()">Kaydet</button>
+            <button onclick="closeEditBox()">İptal</button>
+        </div>
+    </div>
+</div>
+
+
+<script src="adresler.js"></script>
