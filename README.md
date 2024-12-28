@@ -8,9 +8,9 @@ Bu proje, sanal market uygulaması için geliştirilmiş bir e-ticaret platformu
 - İndirim Sistemi
 - Gerçek Zamanlı Fiyat Güncellemeleri
 
-# Sürüm v1.0.9 Yayında (23.12.2024)
+# Sürüm v1.1.0 Yayında (28.12.2024)
 
 # Proje Üyeleri
 - Şükrü Yurdabak
-- Veli Yılmazzz
+- Veli Yılmaz
 - Gökhan Güçlü
