@@ -12,5 +12,5 @@ Bu proje, sanal market uygulaması için geliştirilmiş bir e-ticaret platformu
 
 # Proje Üyeleri
 - Şükrü Yurdabak
-- Veli Yılmaz
+- Veli Yılmazzz
 - Gökhan Güçlü
