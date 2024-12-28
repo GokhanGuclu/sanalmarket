@@ -265,3 +265,26 @@ button {
   background-color: #f44336;
   color: white;
 }
+
+.star-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.3s;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+  background-color: white;
+}
+.star-btn.favori {
+  color: #ffc400;
+  border-color: #ffc400;
+  background-color: #fffbe6;
+}

@@ -76,6 +76,31 @@ router.get('/urunler/:kategori', async (req, res) => {
     }
 });
 
+// ------------------ // ÖZEL ÜRÜN ÇEKME APİSİ // ------------------ //
+router.get('/urunler/detay/:urunID', async (req, res) => {
+    const { urunID } = req.params; 
+
+    try {
+        const query = `
+            SELECT 
+                Urun.*,
+                Indirim.IndirimOrani,
+                Indirim.KampanyaAdi
+            FROM 
+                Urun
+            LEFT JOIN 
+                Indirim ON Urun.UrunID = Indirim.UrunID
+            WHERE 
+                Urun.UrunID = ?;
+        `;
+        const urun = await runQuery(query, [urunID]); 
+        res.json(urun[0]); 
+    } catch (error) {
+        console.error('Veritabanı hatası:', error.message);
+        res.status(500).json({ error: 'Ürün bilgisi alınırken bir hata oluştu.' });
+    }
+});
+
 // ------------------ // ADRES ÇEKME APİSİ // ------------------ //
 router.get('/adresler', async (req, res) => {
     const kullaniciID = req.session.userID || 1000;
@@ -112,14 +137,13 @@ router.get('/adresler', async (req, res) => {
 
 // ------------------ // ARAMA YAPARAK ÜRÜN ÇEKME APİSİ // ------------------ //
 router.get('/ara/urun', async (req, res) => {
-    const { arama } = req.query; // Arama parametresini al
+    const { arama } = req.query;
 
     if (!arama) {
         return res.status(400).json({ success: false, message: 'Arama terimi belirtilmedi.' });
     }
 
     try {
-        // SQL sorgusu - Ürün adı veya açıklamasında arama yap
         const query = `
             SELECT 
                 UrunID,
@@ -135,7 +159,7 @@ router.get('/ara/urun', async (req, res) => {
                 UrunAdi LIKE ? OR Aciklama LIKE ?;
         `;
 
-        const aramaTerimi = `%${arama}%`; // SQL'de LIKE için gerekli format
+        const aramaTerimi = `%${arama}%`;
         const urunler = await runQuery(query, [aramaTerimi, aramaTerimi]);
 
         res.json({ success: true, urunler });
@@ -145,17 +169,16 @@ router.get('/ara/urun', async (req, res) => {
     }
 });
 
+// ------------------ // ADRES EKLEME APİSİ // ------------------ //
 router.post('/adresler', async (req, res) => {
     const { adresBaslik, adresAciklama, sehir, ilce } = req.body;
-    const kullaniciID = req.session.userID || 1000; // Oturumdaki kullanıcı ID
+    const kullaniciID = req.session.userID || 1000;
 
-    // Zorunlu alanları kontrol et
     if (!adresBaslik || !adresAciklama || !sehir || !ilce) {
         return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
     }
 
     try {
-        // 1. Adres sayısını kontrol et
         const countQuery = `
             SELECT COUNT(*) AS adresSayisi
             FROM Adres
@@ -164,12 +187,10 @@ router.post('/adresler', async (req, res) => {
         const result = await runQuery(countQuery, [kullaniciID]);
         const adresSayisi = result[0].adresSayisi;
 
-        // Maksimum 5 adres kontrolü
         if (adresSayisi >= 5) {
             return res.status(400).json({ success: false, message: 'En fazla 5 adres ekleyebilirsiniz.' });
         }
 
-        // 2. Diğer adresleri seçilmemiş yap
         const resetQuery = `
             UPDATE Adres
             SET SecilenAdres = false
@@ -177,7 +198,6 @@ router.post('/adresler', async (req, res) => {
         `;
         await runQuery(resetQuery, [kullaniciID]);
 
-        // 3. Yeni adresi ekle ve seçilen yap
         const insertQuery = `
             INSERT INTO Adres (KullaniciID, AdresBaslik, AdresAciklama, Sehir, Ilce, SecilenAdres)
             VALUES (?, ?, ?, ?, ?, true);
@@ -192,10 +212,10 @@ router.post('/adresler', async (req, res) => {
 });
 
 
-
+// ------------------ // ADRES GÜNCELLEME APİSİ // ------------------ //
 router.put('/adresler/:adresID', async (req, res) => {
-    const adresID = req.params.adresID; // Güncellenecek adres ID'si
-    const { adresBaslik, adresAciklama, sehir, ilce } = req.body; // Güncellenecek bilgiler
+    const adresID = req.params.adresID;
+    const { adresBaslik, adresAciklama, sehir, ilce } = req.body;
 
     if (!adresBaslik || !adresAciklama || !sehir || !ilce) {
         return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
@@ -216,8 +236,9 @@ router.put('/adresler/:adresID', async (req, res) => {
     }
 });
 
+// ------------------ // ADRES SİLME APİSİ // ------------------ //
 router.delete('/adresler/:adresID', async (req, res) => {
-    const adresID = req.params.adresID; // Silinecek adres ID'si
+    const adresID = req.params.adresID; 
 
     try {
         const query = `
@@ -240,11 +261,10 @@ router.delete('/adresler/:adresID', async (req, res) => {
 
 // ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
 router.put('/adresler/secilen', async (req, res) => {
-    const { adresID } = req.body; // Seçilen adresin ID'si
-    const kullaniciID = req.session.userID || 1000; // Oturumdaki kullanıcı ID
+    const { adresID } = req.body;
+    const kullaniciID = req.session.userID || 1000; 
 
     try {
-        // Tüm adreslerin seçilen değerini sıfırla
         const resetQuery = `
             UPDATE Adres
             SET SecilenAdres = false
@@ -252,7 +272,6 @@ router.put('/adresler/secilen', async (req, res) => {
         `;
         await runQuery(resetQuery, [kullaniciID]);
 
-        // Seçilen adresi güncelle
         const updateQuery = `
             UPDATE Adres
             SET SecilenAdres = true
@@ -266,9 +285,6 @@ router.put('/adresler/secilen', async (req, res) => {
         res.status(500).json({ success: false, message: 'Seçilen adres güncellenemedi.' });
     }
 });
-
-
-
 
 // ------------------ // SEPET ÇEKME APİSİ // ------------------ //
 router.get('/sepet', async (req, res) => {
@@ -547,6 +563,59 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
     } catch (error) {
         console.error('Ürün eklenirken hata oluştu:', error.message);
         res.status(500).json({ success: false, message: 'Ürün eklenemedi.' });
+    }
+});
+
+// ------------------ // FAVORİLER ÇEKME APİSİ // ------------------ //
+router.get('/favoriler/:kullaniciID', async (req, res) => {
+    const { kullaniciID } = req.params;
+
+    try {
+        const query = `
+            SELECT UrunID, MIN(EklenmeTarihi) AS EklenmeTarihi
+            FROM favoriler
+            WHERE KullaniciID = ?
+            GROUP BY UrunID;
+        `;
+        const favoriler = await runQuery(query, [kullaniciID]);
+        res.json(favoriler);
+    } catch (error) {
+        console.error('Favoriler alınırken hata:', error.message);
+        res.status(500).json({ success: false, message: 'Favoriler alınamadı.' });
+    }
+});
+
+// ------------------ // FAVORİ KAYITLAMA APİSİ // ------------------ //
+router.post('/favoriler', async (req, res) => {
+    const { kullaniciID, urunID } = req.body;
+
+    try {
+        const query = `
+            INSERT INTO favoriler (KullaniciID, UrunID, EklenmeTarihi)
+            VALUES (?, ?, NOW());
+        `;
+        await runQuery(query, [kullaniciID, urunID]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Favori eklenirken hata:', error.message);
+        res.status(500).json({ success: false, message: 'Favori eklenemedi.' });
+    }
+});
+
+// ------------------ // FAVORİ SİLME APİSİ // ------------------ //
+router.delete('/favoriler', async (req, res) => {
+    const { kullaniciID, urunID } = req.body;
+
+    try {
+        const query = `
+            DELETE FROM favoriler
+            WHERE KullaniciID = ? AND UrunID = ?;
+        `;
+        await runQuery(query, [kullaniciID, urunID]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Favori silinirken hata:', error.message);
+        res.status(500).json({ success: false, message: 'Favori silinemedi.' });
     }
 });
 

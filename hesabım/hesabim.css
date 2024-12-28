@@ -1,27 +1,27 @@
-/* Genel Ayarlar */
+
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
     color: #333;
     display: flex;
-    justify-content: center; /* Sayfa yatayda ortalanır */
-    align-items: center;    /* Sayfa dikeyde ortalanır */
-    height: 100vh;          /* Tam sayfa yüksekliği */
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
 }
 
 .container {
     display: flex;
-    width: 80%;            /* Ortalamak için genişlik sınırı */
-    max-width: 1200px;     /* Çok büyük ekranlarda daha dar olması için */
-    min-height: 80%;       /* Yükseklik sınırı */
+    width: 80%; 
+    max-width: 1200px; 
+    min-height: 80%;
     background-color: #fff;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Hafif gölge efekti */
-    overflow: hidden;      /* Taşan öğeler kesilir */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+    overflow: hidden; 
 }
 
-/* Sidebar */
 .sidebar {
     width: 300px;
     background-color: #f7f7f7;
@@ -100,12 +100,10 @@ body {
     color: #333;
 }
 .menu li.active {
-    background-color: #f0f0f0; /* Aktif menü öğesi arka plan rengi */
-    color: #333; /* Aktif öğe metin rengi */
+    background-color: #f0f0f0; 
+    color: #333;
 }
 
-
-/* Footer */
 .footer {
     margin-top: auto;
     text-align: center;
@@ -123,7 +121,6 @@ body {
     display: block;
 }
 
-/* İçerik Alanı */
 .content {
     flex: 1;
     padding: 20px;

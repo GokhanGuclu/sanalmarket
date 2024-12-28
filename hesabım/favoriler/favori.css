@@ -1,0 +1,100 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f8f8;
+}
+
+.favoriler-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+.favori-listesi {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.favori-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.favori-item img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-right: 15px;
+}
+
+.favori-details {
+    flex-grow: 1;
+}
+
+.favori-details h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.favori-details p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.favori-details .price del {
+    color: #aaa;
+    margin-right: 5px;
+}
+
+.favori-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.star-btn {
+    font-size: 24px; 
+    color: #ccc;
+    cursor: pointer;
+    transition: color 0.3s, background-color 0.3s;
+    width: 40px; 
+    height: 40px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; 
+    border: 2px solid #ffc400; 
+    background-color: #fff; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);  
+}
+
+.star-btn.favori {
+    color: #ffc400; 
+    background-color: #fff8e1; 
+}
+
+.star-btn:hover {
+    color: #ffa000; 
+    background-color: #ffecb3; 
+}
+
+.kampanya {
+    color: #d32f2f; 
+    font-weight: bold;  
+    margin-top: 5px; 
+    font-size: 14px;
+}

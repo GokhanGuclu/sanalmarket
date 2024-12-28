@@ -11,7 +11,7 @@ fetch('/api/kullanici')
     })
     .catch(error => console.error('Kullanıcı bilgisi alınırken hata oluştu:', error));
 
-
+kullaniciID = 1000;
 
 fetch('../navbar/navbar.html')
     .then(response => response.text())
@@ -25,72 +25,112 @@ const urlPath = window.location.pathname;
 const kategoriAdi = urlPath.split('/')[2];
 
 if (kategoriAdi) {
-    fetch(`/api/urunler/${kategoriAdi}`)
+    fetch('/api/kullanici')
         .then(response => response.json())
-        .then(urunListesi => {
-            fetch('/api/sepet')
+        .then(userData => {
+
+            fetch(`/api/urunler/${kategoriAdi}`)
                 .then(response => response.json())
-                .then(sepetData => {
-                    const sepetUrunleri = sepetData.success ? sepetData.sepetUrunleri : [];
-                    const urunlerContainer = document.querySelector('.category-container');
-                    urunlerContainer.innerHTML = '';
+                .then(urunListesi => {
+                    fetch('/api/sepet')
+                        .then(response => response.json())
+                        .then(sepetData => {
+                            const sepetUrunleri = sepetData.success ? sepetData.sepetUrunleri : [];
 
-                    urunListesi.forEach(urun => {
-                        const indirimOrani = urun.IndirimOrani || 0;
-                        const kampanyaAdi = urun.KampanyaAdi || '';
-                        const orijinalFiyat = parseFloat(urun.UrunFiyat);
-                        const indirimliFiyat = indirimOrani > 0
-                            ? (orijinalFiyat * (1 - indirimOrani / 100)).toFixed(2)
-                            : orijinalFiyat.toFixed(2);
-
-                        const sepetUrunu = sepetUrunleri.find(item => item.UrunID === urun.UrunID);
-                        const mevcutMiktar = sepetUrunu ? sepetUrunu.UrunSayisi : 0;
-
-                        const urunDiv = document.createElement('div');
-                        urunDiv.className = 'category-item';
-                        urunDiv.dataset.urunId = urun.UrunID;
-                        urunDiv.dataset.orijinalFiyat = orijinalFiyat;
-                        urunDiv.dataset.indirimOrani = indirimOrani;
-
-                        if (kullaniciID !== null && mevcutMiktar > 0) {
-                            urunDiv.innerHTML = `
-                                ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
-                                <img src="${urun.Gorsel}" alt="${urun.UrunAdi}">
-                                <h3>${urun.UrunAdi}</h3>
-                                <p class="price">
-                                    ${indirimOrani > 0 
-                                        ? `<del>${orijinalFiyat} TL</del> ${indirimliFiyat} TL`
-                                        : `${indirimliFiyat} TL`}
-                                </p>
-                                <div class="quantity-controls-item">
-                                    <button class="quantity-btn-item" onclick="changeQuantity(this, -1)">−</button>
-                                    <span class="quantity-display-item">${mevcutMiktar}</span>
-                                    <button class="quantity-btn-item" onclick="changeQuantity(this, 1)">+</button>
-                                </div>
-                            `;
-                        } else {
-                            urunDiv.innerHTML = `
-                                ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
-                                <img src="${urun.Gorsel}" alt="${urun.UrunAdi}">
-                                <h3>${urun.UrunAdi}</h3>
-                                <p class="price">
-                                    ${indirimOrani > 0 
-                                        ? `<del>${orijinalFiyat} TL</del> ${indirimliFiyat} TL`
-                                        : `${indirimliFiyat} TL`}
-                                </p>
-                                <button class="add-to-cart" onclick="toggleQuantityControls(this)">Sepete Ekle</button>
-                            `;
-                        }
-                        urunlerContainer.appendChild(urunDiv);
-                    });
+                            if (kullaniciID) {
+                                fetch(`/api/favoriler/${kullaniciID}`)
+                                    .then(response => response.json())
+                                    .then(favoriler => {
+                                        const favoriUrunler = favoriler.map(fav => fav.UrunID);
+                                        renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID);
+                                    })
+                                    .catch(error => console.error('Favoriler alınırken hata oluştu:', error));
+                            } else {
+                                renderProducts(urunListesi, sepetUrunleri, [], null);
+                            }
+                        });
+                })
+                .catch(error => {
+                    console.error('Ürünler yüklenirken hata oluştu:', error);
+                    window.location.href = '/404/';
                 });
-        })
-        .catch(error => {
-            console.error('Ürünler yüklenirken hata oluştu:', error);
-            window.location.href = '/404/';
         });
 } else {
     window.location.href = '/404/';
+}
+
+function renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID) {
+    const urunlerContainer = document.querySelector('.category-container');
+    urunlerContainer.innerHTML = '';
+
+    urunListesi.forEach(urun => {
+        const indirimOrani = urun.IndirimOrani || 0;
+        const kampanyaAdi = urun.KampanyaAdi || '';
+        const orijinalFiyat = parseFloat(urun.UrunFiyat);
+        const indirimliFiyat = indirimOrani > 0
+            ? (orijinalFiyat * (1 - indirimOrani / 100)).toFixed(2)
+            : orijinalFiyat.toFixed(2);
+
+        const sepetUrunu = sepetUrunleri.find(item => item.UrunID === urun.UrunID);
+        const mevcutMiktar = sepetUrunu ? sepetUrunu.UrunSayisi : 0;
+
+        const isFavori = favoriUrunler.includes(urun.UrunID);
+
+        const urunDiv = document.createElement('div');
+        urunDiv.className = 'category-item';
+        urunDiv.dataset.urunId = urun.UrunID;
+        urunDiv.dataset.orijinalFiyat = orijinalFiyat;
+        urunDiv.dataset.indirimOrani = indirimOrani;
+
+        urunDiv.innerHTML = `
+            <div class="star-btn ${isFavori ? 'favori' : ''}" onclick="toggleFavorite(${urun.UrunID}, this, ${kullaniciID})">★</div>
+            ${kampanyaAdi ? `<span class="discount">${kampanyaAdi}</span>` : ''}
+            <img src="${urun.Gorsel}" alt="${urun.UrunAdi}">
+            <h3>${urun.UrunAdi}</h3>
+            <p class="price">
+                ${indirimOrani > 0 
+                    ? `<del>${orijinalFiyat} TL</del> ${indirimliFiyat} TL`
+                    : `${indirimliFiyat} TL`}
+            </p>
+            ${kullaniciID !== null && mevcutMiktar > 0 ? `
+                <div class="quantity-controls-item">
+                    <button class="quantity-btn-item" onclick="changeQuantity(this, -1)">−</button>
+                    <span class="quantity-display-item">${mevcutMiktar}</span>
+                    <button class="quantity-btn-item" onclick="changeQuantity(this, 1)">+</button>
+                </div>
+            ` : `
+                <button class="add-to-cart" onclick="toggleQuantityControls(this)">Sepete Ekle</button>
+            `}
+        `;
+
+        urunlerContainer.appendChild(urunDiv);
+    });
+}
+
+function toggleFavorite(urunID, element, kullaniciID) {
+    if (kullaniciID == null) {
+        alert('Favorilere eklemek için giriş yapmalısınız!');
+        return;
+    }
+
+    const isFavori = element.classList.contains('favori');
+    const method = isFavori ? 'DELETE' : 'POST';
+
+    fetch(`/api/favoriler`, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kullaniciID, urunID }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                element.classList.toggle('favori');
+                element.classList.toggle('active');
+            } else {
+                alert('Favori durumu güncellenemedi.');
+            }
+        })
+        .catch(error => console.error('Favori güncelleme hatası:', error));
 }
 
 
