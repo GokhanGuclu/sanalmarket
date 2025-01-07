@@ -7,13 +7,13 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function kullaniciBilgileriniYukle() {
-    fetch('/api/kullanicibilgi', { credentials: 'include' }) // Oturum bilgilerini ekle
+    fetch('/api/kullanicibilgi', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const { Ad, Soyad, Mail } = data.kullanici;
-                document.querySelector('.user-info h3').textContent = `${Ad} ${Soyad}`; // Ad ve Soyad yaz
-                document.querySelector('.user-info p').textContent = Mail; // Mail yaz
+                document.querySelector('.user-info h3').textContent = `${Ad} ${Soyad}`; 
+                document.querySelector('.user-info p').textContent = Mail;
             } else {
                 console.warn('Kullanıcı bilgisi alınamadı:', data.message);
             }
@@ -265,10 +265,10 @@ function kartlariYukle() {
     fetch('/api/kartlar', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
-            console.log('Kart API Yanıtı:', data); // Yanıtı kontrol et
+            console.log('Kart API Yanıtı:', data); 
 
             if (data.success && data.kartlar.length > 0) {
-                cardSection.innerHTML = ''; // Temizle
+                cardSection.innerHTML = ''; 
 
                 data.kartlar.forEach(kart => {
                     const kartHTML = `
@@ -295,7 +295,6 @@ function kartlariYukle() {
 }
 
 function maskKartNumara(numara) {
-    // Kart numarasını maskeler: **** **** **** 1234
     return '**** **** **** ' + numara.slice(-4);
 }
 
@@ -307,7 +306,7 @@ function kartDuzenle(kartID = null, isim = '', numara = '', tarih = '', cvv = ''
     document.getElementById('editKartCVV').value = cvv;
 
     editBox.style.display = 'flex';
-    editBox.dataset.kartId = kartID; // ID'yi sakla
+    editBox.dataset.kartId = kartID; 
 }
 
 function closeCardEditBox() {
@@ -316,13 +315,12 @@ function closeCardEditBox() {
 
 function saveCardEdit() {
     const editBox = document.getElementById('editCardBox');
-    const kartID = editBox.dataset.kartId || null; // ID varsa al, yoksa null
+    const kartID = editBox.dataset.kartId || null;
     const isim = document.getElementById('editKartIsim').value.trim();
     const numara = document.getElementById('editKartNumara').value.trim();
     const tarih = document.getElementById('editKartTarih').value.trim();
     const cvv = document.getElementById('editKartCVV').value.trim();
 
-    // Kontroller
     if (!isim || isim.length < 3 || isim.length > 100) {
         alert('Kart ismi 3-100 karakter arasında olmalıdır!');
         return;
@@ -333,7 +331,7 @@ function saveCardEdit() {
         return;
     }
 
-    const tarihRegex = /^(0[1-9]|1[0-2])\/\d{4}$/; // MM/YYYY formatı
+    const tarihRegex = /^(0[1-9]|1[0-2])\/\d{4}$/;
     if (!tarihRegex.test(tarih)) {
         alert('Geçerli bir son kullanma tarihi giriniz (MM/YYYY)!');
         return;
@@ -344,11 +342,9 @@ function saveCardEdit() {
         return;
     }
 
-    // API URL ve Method belirleme
-    const method = kartID ? 'PUT' : 'POST'; // ID varsa güncelle, yoksa ekle
+    const method = kartID ? 'PUT' : 'POST';
     const url = kartID ? `/api/kartlar/${kartID}` : '/api/kartlar';
 
-    // API İsteği
     fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
@@ -364,7 +360,7 @@ function saveCardEdit() {
             if (data.success) {
                 alert(`Kart başarıyla ${kartID ? 'güncellendi' : 'eklendi'}!`);
                 closeCardEditBox();
-                kartlariYukle(); // Listeyi güncelle
+                kartlariYukle();
             } else {
                 alert(`Kart ${kartID ? 'güncellenemedi' : 'eklenemedi'}!`);
             }
@@ -384,7 +380,7 @@ function kartSil(kartID) {
         .then(data => {
             if (data.success) {
                 alert('Kart başarıyla silindi!');
-                kartlariYukle(); // Listeyi güncelle
+                kartlariYukle();
             } else {
                 alert('Kart silinemedi!');
             }

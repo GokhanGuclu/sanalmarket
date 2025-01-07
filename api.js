@@ -657,7 +657,7 @@ router.delete('/favoriler', async (req, res) => {
 
 // ------------------ // KART ÇEKME APİSİ // ------------------ //
 router.get('/kartlar', async (req, res) => {
-    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+    const kullaniciID = req.session.userID; 
 
     if (!kullaniciID) {
         return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
@@ -674,7 +674,7 @@ router.get('/kartlar', async (req, res) => {
         if (kartlar.length > 0) {
             res.json({ success: true, kartlar });
         } else {
-            res.json({ success: true, kartlar: [] }); // Boş liste döndür
+            res.json({ success: true, kartlar: [] });
         }
     } catch (error) {
         console.error('Kartlar çekilirken hata oluştu:', error.message);
@@ -684,7 +684,7 @@ router.get('/kartlar', async (req, res) => {
 
 // ------------------ // KART EKLEME APİSİ // ------------------ //
 router.post('/kartlar', async (req, res) => {
-    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+    const kullaniciID = req.session.userID;
     const { KartIsim, KartNumara, SonKullanmaTarih, CVV } = req.body;
 
     if (!kullaniciID) {
@@ -711,8 +711,8 @@ router.post('/kartlar', async (req, res) => {
 
 // ------------------ // KART GÜNCELLEME APİSİ // ------------------ //
 router.put('/kartlar/:kartID', async (req, res) => {
-    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
-    const kartID = req.params.kartID; // Güncellenecek kartın ID'si
+    const kullaniciID = req.session.userID;
+    const kartID = req.params.kartID; 
     const { KartIsim, KartNumara, SonKullanmaTarih, CVV } = req.body;
 
     if (!kullaniciID) {
@@ -740,8 +740,8 @@ router.put('/kartlar/:kartID', async (req, res) => {
 
 // ------------------ // KART SİLME APİSİ // ------------------ //
 router.delete('/kartlar/:kartID', async (req, res) => {
-    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
-    const kartID = req.params.kartID; // Silinecek kartın ID'si
+    const kullaniciID = req.session.userID;
+    const kartID = req.params.kartID;
 
     if (!kullaniciID) {
         return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
