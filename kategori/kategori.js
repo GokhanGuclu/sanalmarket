@@ -1,18 +1,4 @@
-let kullaniciID = null; 
-
-fetch('/api/kullanici')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            kullaniciID = data.kullaniciID; 
-        } else {
-            console.log('Kullanıcı girişi yapılmamış.');
-        }
-    })
-    .catch(error => console.error('Kullanıcı bilgisi alınırken hata oluştu:', error));
-
-kullaniciID = 1000;
-
+// Navbar Yükleme
 fetch('../navbar/navbar.html')
     .then(response => response.text())
     .then(data => {
@@ -21,44 +7,84 @@ fetch('../navbar/navbar.html')
     })
     .catch(error => console.error('Navbar yüklenirken hata oluştu:', error));
 
-const urlPath = window.location.pathname;
-const kategoriAdi = urlPath.split('/')[2];
-
-if (kategoriAdi) {
-    fetch('/api/kullanici')
+    const urlPath = window.location.pathname;
+    const kategoriAdi = urlPath.split('/')[2];
+    
+    if (!kategoriAdi) {
+        window.location.href = '/404/';
+        throw new Error('Kategori adı eksik!');
+    }
+    
+    console.log('Kategori Adı:', kategoriAdi);
+    
+    let kullaniciID = null;
+    
+    fetch('/api/kullanici', { credentials: 'include' })
         .then(response => response.json())
         .then(userData => {
-
-            fetch(`/api/urunler/${kategoriAdi}`)
-                .then(response => response.json())
-                .then(urunListesi => {
-                    fetch('/api/sepet')
-                        .then(response => response.json())
-                        .then(sepetData => {
-                            const sepetUrunleri = sepetData.success ? sepetData.sepetUrunleri : [];
-
-                            if (kullaniciID) {
-                                fetch(`/api/favoriler/${kullaniciID}`)
-                                    .then(response => response.json())
-                                    .then(favoriler => {
-                                        const favoriUrunler = favoriler.map(fav => fav.UrunID);
-                                        renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID);
-                                    })
-                                    .catch(error => console.error('Favoriler alınırken hata oluştu:', error));
-                            } else {
-                                renderProducts(urunListesi, sepetUrunleri, [], null);
-                            }
-                        });
-                })
-                .catch(error => {
-                    console.error('Ürünler yüklenirken hata oluştu:', error);
-                    window.location.href = '/404/';
-                });
+            if (userData.success && userData.userID) {
+                kullaniciID = userData.userID;
+                console.log('Kullanıcı ID:', kullaniciID);
+            } else {
+                console.warn('Kullanıcı giriş yapmamış.');
+            }
+            urunleriYukle();
+        })
+        .catch(error => {
+            console.error('Kullanıcı bilgisi alınırken hata oluştu:', error);
+            urunleriYukle();
         });
-} else {
-    window.location.href = '/404/';
-}
-
+    
+    function urunleriYukle() {
+        fetch(`/api/urunler/${kategoriAdi}`)
+            .then(response => response.json())
+            .then(urunListesi => {
+                console.log('Ürün Listesi:', urunListesi);
+    
+                if (!urunListesi || urunListesi.length === 0) {
+                    console.warn('Bu kategoride ürün bulunamadı!');
+                    window.location.href = '/404/';
+                    return;
+                }
+    
+                sepetVeFavorileriYukle(urunListesi);
+            })
+            .catch(error => {
+                console.error('Ürünler yüklenirken hata oluştu:', error);
+                window.location.href = '/404/';
+            });
+    }
+    
+    function sepetVeFavorileriYukle(urunListesi) {
+        const sepetVerisi = kullaniciID
+            ? fetch('/api/sepet', { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => data.success ? data.sepetUrunleri : [])
+                .catch(() => [])
+            : Promise.resolve([]);
+    
+            const favoriVerisi = kullaniciID
+            ? fetch('/api/favoriler', { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Favoriler:', data); // Konsola yazdır
+                    return data.success ? data.favoriler.map(fav => fav.UrunID) : [];
+                })
+                .catch(() => [])
+            : Promise.resolve([]);
+        
+    
+        Promise.all([sepetVerisi, favoriVerisi]) // Tüm veriler yüklendiğinde
+            .then(([sepetUrunleri, favoriUrunler]) => {
+                renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID); // Ürünleri render et
+            })
+            .catch(error => {
+                console.error('Sepet ve favoriler yüklenirken hata oluştu:', error);
+                renderProducts(urunListesi, [], [], null); // Hata durumunda boş verilerle render et
+            });
+    }
+    
+    
 function renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID) {
     const urunlerContainer = document.querySelector('.category-container');
     urunlerContainer.innerHTML = '';

@@ -1,6 +1,25 @@
 // -------------------- //
 // SAYFA YÜKLEME VE MENÜ //
 // -------------------- //
+window.addEventListener('DOMContentLoaded', () => {
+    loadPage('adresler');
+    kullaniciBilgileriniYukle()
+});
+
+function kullaniciBilgileriniYukle() {
+    fetch('/api/kullanicibilgi', { credentials: 'include' }) // Oturum bilgilerini ekle
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const { Ad, Soyad, Mail } = data.kullanici;
+                document.querySelector('.user-info h3').textContent = `${Ad} ${Soyad}`; // Ad ve Soyad yaz
+                document.querySelector('.user-info p').textContent = Mail; // Mail yaz
+            } else {
+                console.warn('Kullanıcı bilgisi alınamadı:', data.message);
+            }
+        })
+        .catch(error => console.error('Kullanıcı bilgileri yüklenirken hata oluştu:', error));
+}
 
 function loadPage(page) {
     const content = document.getElementById('content');
@@ -13,6 +32,8 @@ function loadPage(page) {
                 favorileriYukle();
             } else if (page === 'adresler') {
                 adresleriYukle();
+            } else if (page == 'kartlarim') {
+                kartlariYukle();
             }
         })
         .catch(error => console.error(`${page}.html yüklenirken hata oluştu:`, error));
@@ -31,25 +52,20 @@ function setActiveMenu(activeItem) {
     activeItem.classList.add('active');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    loadPage('adresler');
-});
-
 // -------------------- //
 // FAVORİLER KODLARI    //
 // -------------------- //
 
 function favorileriYukle() {
     const favoriListesi = document.getElementById('favori-listesi');
-    let kullaniciID = 1000;
 
-    fetch(`/api/favoriler/${kullaniciID}`)
+    fetch(`/api/favoriler`)
         .then(response => response.json())
         .then(data => {
-            if (data.length > 0) {
+            if (data.success && data.favoriler.length > 0) {
                 favoriListesi.innerHTML = '';
-                
-                const promises = data.map(item => 
+
+                const promises = data.favoriler.map(item => 
                     fetch(`/api/urunler/detay/${item.UrunID}`)
                         .then(res => res.json())
                         .then(urun => {
@@ -91,16 +107,25 @@ function favoriKaldir(urunID, element) {
     fetch(`/api/favoriler`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kullaniciID: 1000, urunID })
+        body: JSON.stringify({ urunID }) 
     })
     .then(response => response.json())
-    .then(() => element.parentElement.parentElement.remove())
+    .then(data => {
+        if (data.success) {
+            element.parentElement.parentElement.remove();
+        } else {
+            alert('Favori kaldırılamadı!');
+        }
+    })
     .catch(err => console.error('Favori kaldırılırken hata oluştu:', err));
 }
+
 
 // -------------------- //
 // ADRESLER KODLARI     //
 // -------------------- //
+
+let selectedAddressID = null;
 
 function adresleriYukle() {
     const addressSection = document.querySelector('.address-section');
@@ -146,26 +171,234 @@ function renderAddresses(adresler) {
     });
 }
 
-function openNewAddressBox() {
-    document.getElementById('editBox').style.display = 'flex';
+function openEditBox(adresID, baslik, aciklama, sehir, ilce) {
+    const editBox = document.getElementById('editBox');
+    document.getElementById('editBaslik').value = baslik;
+    document.getElementById('editAciklama').value = aciklama;
+    document.getElementById('editSehir').value = sehir;
+    document.getElementById('editIlce').value = ilce;
+
+    editBox.style.display = 'flex';
+    editBox.setAttribute('data-id', adresID);
 }
+
+function openNewAddressBox() {
+    const editBox = document.getElementById('editBox');
+    document.getElementById('editBaslik').value = '';
+    document.getElementById('editAciklama').value = '';
+    document.getElementById('editSehir').value = '';
+    document.getElementById('editIlce').value = '';
+
+    editBox.style.display = 'flex';
+    editBox.removeAttribute('data-id');
+}
+
+function closeEditBox() {
+    const editBox = document.getElementById('editBox');
+    editBox.style.display = 'none';
+}
+
+function saveEdit() {
+    const editBox = document.getElementById('editBox');
+    const adresID = editBox.getAttribute('data-id');
+
+    const baslik = document.getElementById('editBaslik').value;
+    const aciklama = document.getElementById('editAciklama').value;
+    const sehir = document.getElementById('editSehir').value;
+    const ilce = document.getElementById('editIlce').value;
+
+    const method = adresID ? 'PUT' : 'POST'; 
+    const url = adresID ? `/api/adresler/${adresID}` : '/api/adresler';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            adresBaslik: baslik,
+            adresAciklama: aciklama,
+            sehir: sehir,
+            ilce: ilce
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Adres başarıyla ${adresID ? 'güncellendi' : 'eklendi'}!`);
+                location.reload();
+            } else {
+                console.error(`Adres ${adresID ? 'güncellenemedi' : 'eklenemedi'}:`, data.message);
+                alert(`Adres ${adresID ? 'güncellenemedi' : 'eklenemedi'}!`);
+            }
+        })
+        .catch(err => {
+            console.error(`Adres ${adresID ? 'güncelleme' : 'ekleme'} hatası:`, err);
+            alert('Sunucu hatası! Lütfen tekrar deneyin.');
+        });
+}
+
 
 function deleteAddress(adresID) {
     if (!confirm('Bu adresi silmek istediğinizden emin misiniz?')) return;
     fetch(`/api/adresler/${adresID}`, { method: 'DELETE' })
         .then(response => response.json())
         .then(data => {
-            if (data.success) location.reload();
+            if (data.success) adresleriYukle();
             else alert('Adres silinemedi!');
         })
         .catch(err => alert('Sunucu hatası!'));
 }
 
 // -------------------- //
+// KARTLARIM KODLARI    //
+// -------------------- //
+
+function kartlariYukle() {
+    const cardSection = document.querySelector('.card-section');
+
+    if (!cardSection) {
+        console.error('Kartlar bölümü bulunamadı!');
+        return;
+    }
+
+    fetch('/api/kartlar', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Kart API Yanıtı:', data); // Yanıtı kontrol et
+
+            if (data.success && data.kartlar.length > 0) {
+                cardSection.innerHTML = ''; // Temizle
+
+                data.kartlar.forEach(kart => {
+                    const kartHTML = `
+                        <div class="card-item">
+                            <h3>${kart.KartIsim}</h3>
+                            <p>${maskKartNumara(kart.KartNumara)}</p>
+                            <div class="actions">
+                                <button onclick="kartDuzenle(${kart.KartID}, '${kart.KartIsim}', '${kart.KartNumara}', '${kart.SonKullanmaTarih}', '${kart.CVV}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="kartSil(${kart.KartID})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    cardSection.innerHTML += kartHTML;
+                });
+            } else {
+                cardSection.innerHTML = '<p>Henüz kart eklenmemiş.</p>';
+            }
+        })
+        .catch(error => console.error('Kartlar yüklenirken hata oluştu:', error));
+}
+
+function maskKartNumara(numara) {
+    // Kart numarasını maskeler: **** **** **** 1234
+    return '**** **** **** ' + numara.slice(-4);
+}
+
+function kartDuzenle(kartID = null, isim = '', numara = '', tarih = '', cvv = '') {
+    const editBox = document.getElementById('editCardBox');
+    document.getElementById('editKartIsim').value = isim;
+    document.getElementById('editKartNumara').value = numara;
+    document.getElementById('editKartTarih').value = tarih;
+    document.getElementById('editKartCVV').value = cvv;
+
+    editBox.style.display = 'flex';
+    editBox.dataset.kartId = kartID; // ID'yi sakla
+}
+
+function closeCardEditBox() {
+    document.getElementById('editCardBox').style.display = 'none';
+}
+
+function saveCardEdit() {
+    const editBox = document.getElementById('editCardBox');
+    const kartID = editBox.dataset.kartId || null; // ID varsa al, yoksa null
+    const isim = document.getElementById('editKartIsim').value.trim();
+    const numara = document.getElementById('editKartNumara').value.trim();
+    const tarih = document.getElementById('editKartTarih').value.trim();
+    const cvv = document.getElementById('editKartCVV').value.trim();
+
+    // Kontroller
+    if (!isim || isim.length < 3 || isim.length > 100) {
+        alert('Kart ismi 3-100 karakter arasında olmalıdır!');
+        return;
+    }
+
+    if (!/^\d{16}$/.test(numara)) {
+        alert('Kart numarası 16 haneli olmalıdır!');
+        return;
+    }
+
+    const tarihRegex = /^(0[1-9]|1[0-2])\/\d{4}$/; // MM/YYYY formatı
+    if (!tarihRegex.test(tarih)) {
+        alert('Geçerli bir son kullanma tarihi giriniz (MM/YYYY)!');
+        return;
+    }
+
+    if (!/^\d{3}$/.test(cvv)) {
+        alert('CVV geçersiz! 3 haneli olmalıdır.');
+        return;
+    }
+
+    // API URL ve Method belirleme
+    const method = kartID ? 'PUT' : 'POST'; // ID varsa güncelle, yoksa ekle
+    const url = kartID ? `/api/kartlar/${kartID}` : '/api/kartlar';
+
+    // API İsteği
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            KartIsim: isim,
+            KartNumara: numara,
+            SonKullanmaTarih: tarih,
+            CVV: cvv
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Kart başarıyla ${kartID ? 'güncellendi' : 'eklendi'}!`);
+                closeCardEditBox();
+                kartlariYukle(); // Listeyi güncelle
+            } else {
+                alert(`Kart ${kartID ? 'güncellenemedi' : 'eklenemedi'}!`);
+            }
+        })
+        .catch(error => {
+            console.error('Kart kaydetme sırasında hata oluştu:', error);
+            alert('Sunucu hatası! Lütfen tekrar deneyin.');
+        });
+}
+
+
+function kartSil(kartID) {
+    if (!confirm('Bu kartı silmek istediğinizden emin misiniz?')) return;
+
+    fetch(`/api/kartlar/${kartID}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Kart başarıyla silindi!');
+                kartlariYukle(); // Listeyi güncelle
+            } else {
+                alert('Kart silinemedi!');
+            }
+        })
+        .catch(error => {
+            console.error('Kart silme sırasında hata oluştu:', error);
+            alert('Sunucu hatası! Lütfen tekrar deneyin.');
+        });
+}
+// -------------------- //
 // TARİH FORMATLAMA     //
 // -------------------- //
 
 function formatTarih(tarih) {
     const date = new Date(tarih);
-    return `${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')} / ${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
 }

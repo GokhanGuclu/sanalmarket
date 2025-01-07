@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartlarım</title>
+    <link rel="stylesheet" href="kartlarim.css">
+</head>
+
+<body>
+    <h1>Kartlarım</h1>
+    <button class="add-card" onclick="kartDuzenle()">+ Yeni Kart Ekle</button>
+    <div class="card-section">
+        <div id="cardList"></div>
+    </div>
+
+    <div id="editCardBox" class="overlay" style="display: none;">
+        <div class="edit-form">
+            <h2 id="editCardTitle">Kart Ekle</h2>
+            <label for="editKartIsim">Kart İsmi:</label>
+            <input type="text" id="editKartIsim">
+
+            <label for="editKartNumara">Kart Numarası:</label>
+            <input type="text" id="editKartNumara">
+
+            <label for="editKartTarih">Son Kullanma Tarihi:</label>
+            <input type="text" id="editKartTarih">
+
+            <label for="editKartCVV">CVV:</label>
+            <input type="text" id="editKartCVV">
+
+            <div class="form-buttons">
+                <button onclick="saveCardEdit()">Kaydet</button>
+                <button onclick="closeCardEditBox()">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/hesabım/hesabim.js"></script>
+</body>
+
+</html>

@@ -19,21 +19,40 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.get('/api/kullanici', (req, res) => {
-    if (req.session.kullaniciID) {
-        res.json({ success: true, kullaniciID: req.session.kullaniciID });
+router.get('/kullanici', (req, res) => {
+    if (req.session.userID) {
+        res.json({ success: true, userID: req.session.userID });
     } else {
         res.json({ success: false, message: 'Kullanıcı girişi yapılmamış.' });
     }
 });
 
-router.get('/kullanici', (req, res) => {
-    if (req.session.kullaniciID) {
-        res.json({ success: true, kullaniciID: req.session.kullaniciID });
-    } else {
-        res.json({ success: false, message: 'Kullanıcı girişi yapılmamış.' });
+router.get('/kullanicibilgi', async (req, res) => {
+    const kullaniciID = req.session.userID; // Oturumdaki kullanıcı ID
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            SELECT Ad, Soyad, Mail
+            FROM kullanici
+            WHERE KullaniciID = ?;
+        `;
+        const [kullanici] = await runQuery(query, [kullaniciID]);
+
+        if (!kullanici) {
+            return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
+        }
+
+        res.json({ success: true, kullanici });
+    } catch (error) {
+        console.error('Kullanıcı bilgileri alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Sunucu hatası.' });
     }
 });
+
 
 router.post('/register', async (req, res) => {
     const { ad, soyad, mail, telefon, password } = req.body;
@@ -48,31 +67,6 @@ router.post('/register', async (req, res) => {
     } catch (err) {
         console.error('Kayıt hatası:', err.message);
         res.status(500).json({ success: false, message: 'Sunucu hatası. Kayıt başarısız.' });
-    }
-});
-
-// ------------------ // ÜRÜN ÇEKME APİSİ // ------------------ //
-router.get('/urunler/:kategori', async (req, res) => {
-    const kategori = req.params.kategori;
-
-    try {
-        const query = `
-            SELECT 
-                Urun.*,
-                Indirim.IndirimOrani,
-                Indirim.KampanyaAdi
-            FROM 
-                Urun
-            LEFT JOIN 
-                Indirim ON Urun.UrunID = Indirim.UrunID
-            WHERE 
-                Urun.Kategori = ?;
-        `;
-        const urunler = await runQuery(query, [kategori]); 
-        res.json(urunler); 
-    } catch (error) {
-        console.error('Veritabanı hatası:', error.message);
-        res.status(500).json({ error: 'Ürünler alınırken bir hata oluştu.' });
     }
 });
 
@@ -98,40 +92,6 @@ router.get('/urunler/detay/:urunID', async (req, res) => {
     } catch (error) {
         console.error('Veritabanı hatası:', error.message);
         res.status(500).json({ error: 'Ürün bilgisi alınırken bir hata oluştu.' });
-    }
-});
-
-// ------------------ // ADRES ÇEKME APİSİ // ------------------ //
-router.get('/adresler', async (req, res) => {
-    const kullaniciID = req.session.userID || 1000;
-
-    try {
-        const query = `
-            SELECT 
-                AdresID, 
-                AdresBaslik, 
-                AdresAciklama, 
-                Sehir, 
-                Ilce, 
-                SecilenAdres
-            FROM 
-                Adres
-            WHERE 
-                KullaniciID = ?
-            ORDER BY 
-                SecilenAdres DESC; -- Seçilen adres en başa gelsin
-        `;
-
-        const adresler = await runQuery(query, [kullaniciID]);
-
-        if (adresler.length > 0) {
-            res.json({ success: true, adresler });
-        } else {
-            res.json({ success: false, message: 'Adres bulunamadı.' });
-        }
-    } catch (error) {
-        console.error('Adresler çekilirken hata oluştu:', error.message);
-        res.status(500).json({ success: false, message: 'Adres verileri alınamadı.' });
     }
 });
 
@@ -169,10 +129,44 @@ router.get('/ara/urun', async (req, res) => {
     }
 });
 
+// ------------------ // ADRES ÇEKME APİSİ // ------------------ //
+router.get('/adresler', async (req, res) => {
+    const kullaniciID = req.session.userID;
+
+    try {
+        const query = `
+            SELECT 
+                AdresID, 
+                AdresBaslik, 
+                AdresAciklama, 
+                Sehir, 
+                Ilce, 
+                SecilenAdres
+            FROM 
+                Adres
+            WHERE 
+                KullaniciID = ?
+            ORDER BY 
+                SecilenAdres DESC; -- Seçilen adres en başa gelsin
+        `;
+
+        const adresler = await runQuery(query, [kullaniciID]);
+
+        if (adresler.length > 0) {
+            res.json({ success: true, adresler });
+        } else {
+            res.json({ success: false, message: 'Adres bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Adresler çekilirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Adres verileri alınamadı.' });
+    }
+});
+
 // ------------------ // ADRES EKLEME APİSİ // ------------------ //
 router.post('/adresler', async (req, res) => {
     const { adresBaslik, adresAciklama, sehir, ilce } = req.body;
-    const kullaniciID = req.session.userID || 1000;
+    const kullaniciID = req.session.userID;
 
     if (!adresBaslik || !adresAciklama || !sehir || !ilce) {
         return res.status(400).json({ success: false, message: 'Tüm alanlar zorunludur.' });
@@ -262,7 +256,7 @@ router.delete('/adresler/:adresID', async (req, res) => {
 // ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
 router.put('/adresler/secilen', async (req, res) => {
     const { adresID } = req.body;
-    const kullaniciID = req.session.userID || 1000; 
+    const kullaniciID = req.session.userID; 
 
     try {
         const resetQuery = `
@@ -283,6 +277,31 @@ router.put('/adresler/secilen', async (req, res) => {
     } catch (error) {
         console.error('Seçilen adres güncellenirken hata oluştu:', error.message);
         res.status(500).json({ success: false, message: 'Seçilen adres güncellenemedi.' });
+    }
+});
+
+// ------------------ // ÜRÜN ÇEKME APİSİ // ------------------ //
+router.get('/urunler/:kategori', async (req, res) => {
+    const kategori = req.params.kategori;
+
+    try {
+        const query = `
+            SELECT 
+                Urun.*,
+                Indirim.IndirimOrani,
+                Indirim.KampanyaAdi
+            FROM 
+                Urun
+            LEFT JOIN 
+                Indirim ON Urun.UrunID = Indirim.UrunID
+            WHERE 
+                Urun.Kategori = ?;
+        `;
+        const urunler = await runQuery(query, [kategori]); 
+        res.json(urunler); 
+    } catch (error) {
+        console.error('Veritabanı hatası:', error.message);
+        res.status(500).json({ error: 'Ürünler alınırken bir hata oluştu.' });
     }
 });
 
@@ -364,8 +383,8 @@ router.post('/sepet', async (req, res) => {
 
         let orijinalFiyat = parseFloat(urun.UrunFiyat);
         let indirimliFiyat = urun.IndirimOrani > 0
-            ? (orijinalFiyat * (1 - urun.IndirimOrani / 100)).toFixed(2)
-            : orijinalFiyat.toFixed(2);
+            ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
+            : orijinalFiyat;
 
         const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
 
@@ -374,7 +393,7 @@ router.post('/sepet', async (req, res) => {
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
             UrunSayisi = UrunSayisi + VALUES(UrunSayisi),
-            UrunFiyat = VALUES(UrunFiyat);
+            UrunFiyat = UrunFiyat + VALUES(UrunFiyat);
         `;
         await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
 
@@ -412,7 +431,11 @@ router.delete('/sepet/:urunID', async (req, res) => {
         const sepetID = sepet.SepetID;
 
         const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
-        await runQuery(deleteQuery, [urunID, sepetID]);
+        const deleted = await runQuery(deleteQuery, [urunID, sepetID]);
+
+        if (deleted.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Ürün bulunamadı.' });
+        }
 
         const updateCartPriceQuery = `
             UPDATE Sepet
@@ -435,7 +458,8 @@ router.delete('/sepet/:urunID', async (req, res) => {
 // ------------------ // SEPETTE ÜRÜN GÜNCELLEME APİSİ // ------------------ //
 router.put('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
-    const { delta, kullaniciID } = req.body;
+    const { delta } = req.body;
+    const kullaniciID = req.session.userID;
 
     try {
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
@@ -461,25 +485,23 @@ router.put('/sepet/:urunID', async (req, res) => {
         }
 
         let yeniMiktar = urun.UrunSayisi + delta;
+        if (yeniMiktar < 1) {
+            return res.status(400).json({ success: false, message: 'Miktar geçersiz.' });
+        }
 
         const orijinalFiyat = parseFloat(urun.UrunFiyat);
         let indirimliFiyat = urun.IndirimOrani > 0
-            ? (orijinalFiyat * (1 - urun.IndirimOrani / 100))
+            ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
             : orijinalFiyat;
 
         const toplamFiyat = (indirimliFiyat * yeniMiktar).toFixed(2);
 
-        if (yeniMiktar <= 0) {
-            const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
-            await runQuery(deleteQuery, [urunID, sepetID]);
-        } else {
-            const updateQuery = `
-                UPDATE SepetUrunleri
-                SET UrunSayisi = ?, UrunFiyat = ?
-                WHERE UrunID = ? AND SepetID = ?;
-            `;
-            await runQuery(updateQuery, [yeniMiktar, toplamFiyat, urunID, sepetID]);
-        }
+        const updateQuery = `
+            UPDATE SepetUrunleri
+            SET UrunSayisi = ?, UrunFiyat = ?
+            WHERE UrunID = ? AND SepetID = ?;
+        `;
+        await runQuery(updateQuery, [yeniMiktar, toplamFiyat, urunID, sepetID]);
 
         const updateCartPriceQuery = `
             UPDATE Sepet
@@ -567,8 +589,12 @@ router.post('/sepet/ekle/:urunID', async (req, res) => {
 });
 
 // ------------------ // FAVORİLER ÇEKME APİSİ // ------------------ //
-router.get('/favoriler/:kullaniciID', async (req, res) => {
-    const { kullaniciID } = req.params;
+router.get('/favoriler', async (req, res) => {
+    const kullaniciID = req.session.userID;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
 
     try {
         const query = `
@@ -578,7 +604,7 @@ router.get('/favoriler/:kullaniciID', async (req, res) => {
             GROUP BY UrunID;
         `;
         const favoriler = await runQuery(query, [kullaniciID]);
-        res.json(favoriler);
+        res.json({ success: true, favoriler });
     } catch (error) {
         console.error('Favoriler alınırken hata:', error.message);
         res.status(500).json({ success: false, message: 'Favoriler alınamadı.' });
@@ -587,7 +613,12 @@ router.get('/favoriler/:kullaniciID', async (req, res) => {
 
 // ------------------ // FAVORİ KAYITLAMA APİSİ // ------------------ //
 router.post('/favoriler', async (req, res) => {
-    const { kullaniciID, urunID } = req.body;
+    const kullaniciID = req.session.userID;
+    const { urunID } = req.body;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
 
     try {
         const query = `
@@ -604,7 +635,12 @@ router.post('/favoriler', async (req, res) => {
 
 // ------------------ // FAVORİ SİLME APİSİ // ------------------ //
 router.delete('/favoriler', async (req, res) => {
-    const { kullaniciID, urunID } = req.body;
+    const kullaniciID = req.session.userID;
+    const { urunID } = req.body;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
 
     try {
         const query = `
@@ -619,5 +655,114 @@ router.delete('/favoriler', async (req, res) => {
     }
 });
 
+// ------------------ // KART ÇEKME APİSİ // ------------------ //
+router.get('/kartlar', async (req, res) => {
+    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            SELECT KartID, KartIsim, KartNumara, SonKullanmaTarih, CVV
+            FROM kartlar
+            WHERE KullaniciID = ?;
+        `;
+        const kartlar = await runQuery(query, [kullaniciID]);
+
+        if (kartlar.length > 0) {
+            res.json({ success: true, kartlar });
+        } else {
+            res.json({ success: true, kartlar: [] }); // Boş liste döndür
+        }
+    } catch (error) {
+        console.error('Kartlar çekilirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Kartlar alınamadı.' });
+    }
+});
+
+// ------------------ // KART EKLEME APİSİ // ------------------ //
+router.post('/kartlar', async (req, res) => {
+    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+    const { KartIsim, KartNumara, SonKullanmaTarih, CVV } = req.body;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    if (!KartIsim || !KartNumara || !SonKullanmaTarih || !CVV) {
+        return res.status(400).json({ success: false, message: 'Eksik bilgi!' });
+    }
+
+    try {
+        const query = `
+            INSERT INTO kartlar (KullaniciID, KartIsim, KartNumara, SonKullanmaTarih, CVV)
+            VALUES (?, ?, ?, ?, ?);
+        `;
+        await runQuery(query, [kullaniciID, KartIsim, KartNumara, SonKullanmaTarih, CVV]);
+
+        res.json({ success: true, message: 'Kart başarıyla eklendi!' });
+    } catch (error) {
+        console.error('Kart eklenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Kart eklenemedi.' });
+    }
+});
+
+// ------------------ // KART GÜNCELLEME APİSİ // ------------------ //
+router.put('/kartlar/:kartID', async (req, res) => {
+    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+    const kartID = req.params.kartID; // Güncellenecek kartın ID'si
+    const { KartIsim, KartNumara, SonKullanmaTarih, CVV } = req.body;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            UPDATE kartlar
+            SET KartIsim = ?, KartNumara = ?, SonKullanmaTarih = ?, CVV = ?
+            WHERE KartID = ? AND KullaniciID = ?;
+        `;
+        const result = await runQuery(query, [KartIsim, KartNumara, SonKullanmaTarih, CVV, kartID, kullaniciID]);
+
+        if (result.affectedRows > 0) {
+            res.json({ success: true, message: 'Kart başarıyla güncellendi!' });
+        } else {
+            res.status(404).json({ success: false, message: 'Kart bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Kart güncellenirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Kart güncellenemedi.' });
+    }
+});
+
+// ------------------ // KART SİLME APİSİ // ------------------ //
+router.delete('/kartlar/:kartID', async (req, res) => {
+    const kullaniciID = req.session.userID; // Oturumdan kullanıcı ID'sini al
+    const kartID = req.params.kartID; // Silinecek kartın ID'si
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            DELETE FROM kartlar
+            WHERE KartID = ? AND KullaniciID = ?;
+        `;
+        const result = await runQuery(query, [kartID, kullaniciID]);
+
+        if (result.affectedRows > 0) {
+            res.json({ success: true, message: 'Kart başarıyla silindi!' });
+        } else {
+            res.status(404).json({ success: false, message: 'Kart bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Kart silinirken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Kart silinemedi.' });
+    }
+});
 
 module.exports = router;

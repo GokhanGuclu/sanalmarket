@@ -1,17 +1,3 @@
-let kullaniciID = null;
-
-fetch('/api/kullanici')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            kullaniciID = data.kullaniciID; 
-        } else {
-            console.log('Kullanıcı girişi yapılmamış.');
-        }
-    })
-    .catch(error => console.error('Kullanıcı bilgisi alınırken hata oluştu:', error));
-
-
 document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/adresler')
         .then(response => response.json())
@@ -86,15 +72,9 @@ function selectAddress(adres) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ adresID: adres.AdresID, kullaniciID: 1000 }), 
+        body: JSON.stringify({ adresID: adres.AdresID}), 
     })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            console.error('Adres güncellenemedi:', data.message);
-            alert('Adres güncellenemedi!');
-        }
-    })
+
     .catch(err => {
         console.error('Adres güncelleme hatası:', err);
         alert('Sunucu hatası! Lütfen tekrar deneyin.');
@@ -207,7 +187,7 @@ function changeCartQuantity(urunID, delta) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ delta, kullaniciID }),
+        body: JSON.stringify({ delta }),
     })
         .then(response => response.json())
         .then(data => {
@@ -272,28 +252,8 @@ function hideLoadingSpinner() {
 }
 
 function toggleAddressDropdown() {
-    navbarshowBox();
-    
-    if (kullaniciID === null) {
-        navbarshowBox();
-        return;
-    }
     const dropdown = document.getElementById('addressDropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+ 
 }
-
-function navbarshowBox() {
-    document.getElementById('loginWarningBoxnavbar').style.display = 'flex';
-};
-
-function navbarhideBox() {
-    document.getElementById('loginWarningBoxnavbar').style.display = 'none';
-};
-
-document.getElementById('cancelButtonnavbar').addEventListener('click', () => {
-    navbarhideBox();
-});
-
-document.getElementById('loginButtonnavbar').addEventListener('click', () => {
-    window.location.href = '/giriskayit';
-});
