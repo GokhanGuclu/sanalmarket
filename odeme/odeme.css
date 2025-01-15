@@ -1,281 +1,303 @@
-/* Genel Ayarlar */
+/* Genel Stil */
 body {
-    margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #f8f8f8;
-    margin-top: 150px;
-}
-
-/* Navbar Ayarları */
-.navbar1 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 18px;
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
-    border-bottom: 2px solid #f0f0f0;
-    gap: 36px;
-}
-
-/* Navbar Elemanları */
-.nav-item1 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #555;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.nav-item1:hover {
-    background-color: #ffc400;
-    color: #fff;
-    border-color: #ffc400;
-}
-
-.badge1 {
-    background-color: red;
-    color: white;
-    font-size: 11px;
-    padding: 3px 5px;
-    border-radius: 50%;
-}
-
-/* Arama Kutusu */
-.search-container1 {
-    display: flex;
-    align-items: center;
-    max-width: 400px;
-    flex-grow: 1;
-    margin: 0 16px;
-}
-
-.search-input1 {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-right: none;
-    border-radius: 6px 0 0 6px;
-    outline: none;
-    font-size: 14px;
-}
-
-.search-btn1 {
-    padding: 8px 14px;
-    background-color: #ffc400;
-    color: #fff;
-    border: none;
-    border-radius: 0 6px 6px 0;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
-}
-
-.search-btn1:hover {
-    background-color: #e0a800;
-}
-
-/* Sayfa İçeriği */
-.containergenel {
-    margin-top: 150px;
-    gap: 50px;
-}
-
-.row {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 50px; /* Kolonlar arasındaki dikey boşluk */
-}
-
-
-
-/* Teslimat Bilgisi */
-.col-md-6 {
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 20px;
-    flex: 1;
-    margin-bottom: 20px; /* Alt boşluk */
-    margin-left: 20px;
-}
-
-h4 {
-    margin-bottom: 20px;
-}
-
-.form-label {
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-
-.form-control {
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    width: 100%;
-}
-
-textarea.form-control {
-    height: 120px;
-}
-
-.mb-3 {
-    margin-bottom: 1.5rem;
-}
-/* Sipariş Özeti */
-.col-md-4 {
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 20px;
-    flex: 1;
-    margin-left: auto; /* Sol boşluğu otomatik ayarlayarak sağa yaslar */
-    margin-bottom: 20px; /* Alt boşluk */
-}
-
-
-.card-header {
-    background-color: #f1f1f1;
-    padding: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 8px 8px 0 0;
-}
-
-.card-body {
-    padding: 20px;
-}
-
-.list-unstyled li {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.card-body ul {
+    margin: 0;
     padding: 0;
+    background-color: #f8f9fa;
 }
 
-.card-body .border-top {
-    border-top: 1px solid #eee;
-    padding-top: 15px;
+/* Konteyner Düzeni */
+.container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.cart-total1 {
-    font-weight: 600;
-    font-size: 1.1rem;
+/* Sol Kısım */
+.left-section {
+    padding-right: 20px;
 }
 
-/* Ödeme Yöntemleri */
-.payment-option {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-    transition: background-color 0.3s ease;
-    width: 48%;
+/* Adres Konteyner */
+.address-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Başlık */
+.address-header h2 {
+    font-size: 20px;
+    font-weight: bold;
     margin-bottom: 15px;
 }
 
-.payment-option:hover {
-    background-color: #f0f0f0;
+/* Adres Kutusu */
+.address-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f8f9fa;
 }
 
-.option-box {
-    margin-left: 15px;
+/* Adres Bilgileri */
+.address-info p {
+    margin: 5px 0;
+    font-size: 16px;
 }
 
-.option-box h5 {
-    font-size: 1.1rem;
-    margin: 0;
-    font-weight: 600;
+/* Teslimat Süresi */
+.delivery-time {
+    padding: 5px 10px;
+    background-color: #28a745;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
 }
 
-.option-box p {
-    font-size: 0.9rem;
-    color: #777;
+.delivery-time span {
+    display: block;
+    font-size: 12px;
+    font-weight: normal;
 }
 
-.payment-method {
+/* Seçenekler */
+.delivery-options {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.delivery-options label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.delivery-options input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Ödeme Yöntemi */
+.payment-method-section {
+    padding: 20px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.payment-method-section h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Radyo Butonları Görünümü */
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.payment-options label {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    font-size: 16px;
+    background-color: #fff;
+}
+
+.payment-options label:hover {
+    border-color: #ffc400;
+}
+
+.payment-options input[type="radio"] {
+    margin-right: 15px;
+}
+
+/* Seçili Radyo Butonu */
+.payment-options input[type="radio"]:checked + label {
+    border-color: #ffc400;
+    box-shadow: 0 0 10px rgba(255, 196, 0, 0.5);
+}
+
+/* Kart Detayları Kutusu */
+#credit-card-details {
+    margin-top: -1px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 0 0 8px 8px;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Kart Detayları İçerik */
+#credit-card-details h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#credit-card-details select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.add-card-btn {
+    padding: 10px;
+    background-color: #ffc400;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#new-card-form {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+#new-card-form input {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.add-card-btn:hover {
+    background-color: #e0a800;
+}
+
+.card-details {
+    display: flex;
+    gap: 10px;
+}
+
+.save-card-btn {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #ffc400;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.save-card-btn:hover {
+    background-color: #e0a800;
+}
+
+/* Sağ Kısım */
+.right-section {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+/* Sepet Özeti */
+.summary-section h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.summary-section p {
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+.summary-section .total {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Buton */
+.checkout-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #ffc400;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
     margin-top: 20px;
 }
 
-#credit-method, #kapida-method {
+.checkout-btn:hover {
+    background-color: #e0a800;
+}
+
+/* Gizli Alan */
+.hidden {
     display: none;
 }
 
-button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
+.save-card-checkbox {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #555;
+    gap: 10px; /* Checkbox ile yazı arasında boşluk */
+    margin: 10px 0 0 0; /* Üstten boşluk ayarlandı ve soldan yapışık */
+}
+
+/* Checkbox İçeriği */
+.save-card-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    margin: 0; /* Tüm boşluklar sıfırlandı */
+    padding: 0;
+}
+
+/* Kaydet Butonu */
+.save-card-btn {
     margin-top: 10px;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-.payment-method input[type="radio"] {
-    display: none;
-}
-
-.payment-method label {
+    padding: 10px;
+    background-color: #ffc400;
+    color: white;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
+    width: 100%;
 }
 
-.payment-method input[type="radio"]:checked + .option-box {
-    background-color: #e1f4f9;
-    border: 1px solid #007bff;
-}
-
-.payment-method input[type="radio"]:checked + .option-box h5 {
-    color: #007bff;
-}
-
-/* Responsive Tasarım */
-@media (max-width: 768px) {
-    .navbar1 {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .search-container1 {
-        width: 100%;
-    }
-
-    .row {
-        flex-direction: column;
-    }
-
-    .col-md-6, .col-md-4 {
-        flex-basis: 100%;
-        margin-bottom: 20px; /* Alt boşluk */
-    }
-
-    .payment-option {
-        width: 100%;
-    }
-
-    .card-body ul {
-        padding-left: 0;
-    }
+.save-card-btn:hover {
+    background-color: #e0a800;
 }

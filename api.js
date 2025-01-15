@@ -147,7 +147,7 @@ router.get('/adresler', async (req, res) => {
             WHERE 
                 KullaniciID = ?
             ORDER BY 
-                SecilenAdres DESC; -- Seçilen adres en başa gelsin
+                SecilenAdres DESC; 
         `;
 
         const adresler = await runQuery(query, [kullaniciID]);
