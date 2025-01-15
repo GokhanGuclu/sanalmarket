@@ -17,8 +17,6 @@
                 </div>
                 <div class="address-box">
                     <div class="address-info">
-                        <p><strong>Ev Yeni</strong></p>
-                        <p>Şeyhcui Mh. Pelit Sokak 56/11 Bina No:56 Kat:4 Daire No:11 Merkez/Amasya</p>
                     </div>
                     <div class="delivery-time">
                         <span>Teslimat Süresi</span>
@@ -45,10 +43,8 @@
                     </label>
                     <div id="credit-card-details" class="hidden">
                         <h3>Kayıtlı Kartlar</h3>
-                        <select>
-                            <option value="card1">**** **** **** 1234</option>
-                            <option value="card2">**** **** **** 5</option>
-                        </select>
+                        <select id="saved-cards">
+                        </select>                        
                         <button class="add-card-btn" onclick="toggleNewCardForm()">Yeni Kart Ekle</button>
 
                         <div id="new-card-form" class="hidden">
@@ -74,16 +70,15 @@
             </div>
         </div>
 
-        <!-- Sağ Kısım -->
         <div class="right-section">
             <div class="summary-section">
                 <h2>Sepet Özeti</h2>
-                <p>Toplam Tutar: <span>187,95 TL</span></p>
-                <p>Teslimat Tutarı: <span>34,99 TL</span></p>
-                <p class="total">Ödenecek Tutar: <span>223,44 TL</span></p>
+                <p><strong>Toplam Tutar: </strong><span id="toplam-tutar">0.00</span> TL</p>
+                <p><strong>Teslimat Tutarı: </strong><span id="teslimat-tutari">34.99</span> TL</p>
+                <p><strong>Ödenecek Tutar: </strong><span id="odenecek-tutar">0.00</span> TL</p>
                 <button class="checkout-btn">Devam Et</button>
             </div>
-        </div>
+        </div>        
     </div>
     <script src="odeme.js"></script>
 </body>

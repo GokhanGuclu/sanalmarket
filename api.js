@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {runQuery, checkUser, addUser } = require('./sql');
+const { runQuery, checkUser, addUser } = require('./sql');
 
 // ------------------ // GİRİŞ KAYIT APİSİ // ------------------ //
 router.post('/login', async (req, res) => {
@@ -72,7 +72,7 @@ router.post('/register', async (req, res) => {
 
 // ------------------ // ÖZEL ÜRÜN ÇEKME APİSİ // ------------------ //
 router.get('/urunler/detay/:urunID', async (req, res) => {
-    const { urunID } = req.params; 
+    const { urunID } = req.params;
 
     try {
         const query = `
@@ -87,8 +87,8 @@ router.get('/urunler/detay/:urunID', async (req, res) => {
             WHERE 
                 Urun.UrunID = ?;
         `;
-        const urun = await runQuery(query, [urunID]); 
-        res.json(urun[0]); 
+        const urun = await runQuery(query, [urunID]);
+        res.json(urun[0]);
     } catch (error) {
         console.error('Veritabanı hatası:', error.message);
         res.status(500).json({ error: 'Ürün bilgisi alınırken bir hata oluştu.' });
@@ -232,7 +232,7 @@ router.put('/adresler/:adresID', async (req, res) => {
 
 // ------------------ // ADRES SİLME APİSİ // ------------------ //
 router.delete('/adresler/:adresID', async (req, res) => {
-    const adresID = req.params.adresID; 
+    const adresID = req.params.adresID;
 
     try {
         const query = `
@@ -256,7 +256,7 @@ router.delete('/adresler/:adresID', async (req, res) => {
 // ------------------ // SEÇİLEN ADRES ÇEKME APİSİ // ------------------ //
 router.put('/adresler/secilen', async (req, res) => {
     const { adresID } = req.body;
-    const kullaniciID = req.session.userID; 
+    const kullaniciID = req.session.userID;
 
     try {
         const resetQuery = `
@@ -297,8 +297,8 @@ router.get('/urunler/:kategori', async (req, res) => {
             WHERE 
                 Urun.Kategori = ?;
         `;
-        const urunler = await runQuery(query, [kategori]); 
-        res.json(urunler); 
+        const urunler = await runQuery(query, [kategori]);
+        res.json(urunler);
     } catch (error) {
         console.error('Veritabanı hatası:', error.message);
         res.status(500).json({ error: 'Ürünler alınırken bir hata oluştu.' });
@@ -308,25 +308,26 @@ router.get('/urunler/:kategori', async (req, res) => {
 // ------------------ // SEPET ÇEKME APİSİ // ------------------ //
 router.get('/sepet', async (req, res) => {
     try {
-        const kullaniciID = req.session.userID; 
+        const kullaniciID = req.session.userID;
         const query = `
-            SELECT 
-                SU.UrunID, 
-                SU.UrunSayisi, 
-                SU.UrunFiyat AS toplamFiyat, 
-                U.UrunAdi, 
-                U.Gorsel, 
-                U.UrunFiyat AS orijinalFiyat,
-                COALESCE(I.IndirimOrani, 0) AS IndirimOrani
-            FROM 
-                SepetUrunleri SU
-            INNER JOIN 
-                Urun U ON SU.UrunID = U.UrunID
-            LEFT JOIN 
-                Indirim I ON U.UrunID = I.UrunID
-            WHERE 
-                SU.SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ?);
-        `;
+        SELECT 
+          SU.UrunID, 
+          SU.UrunSayisi, 
+          SU.UrunFiyat AS toplamFiyat, 
+          U.UrunAdi, 
+          U.Gorsel, 
+          U.UrunFiyat AS orijinalFiyat,
+          COALESCE(I.IndirimOrani, 0) AS IndirimOrani,
+          (SELECT S.SepetFiyat FROM Sepet S WHERE S.SepetID = SU.SepetID) AS SepetFiyat 
+        FROM 
+          SepetUrunleri SU
+        INNER JOIN 
+          Urun U ON SU.UrunID = U.UrunID
+        LEFT JOIN 
+          Indirim I ON U.UrunID = I.UrunID
+        WHERE 
+          SU.SepetID = (SELECT SepetID FROM Sepet WHERE KullaniciID = ? AND SepetAktif = 1);
+      `;
         const sepetUrunleri = await runQuery(query, [kullaniciID]);
 
         if (sepetUrunleri.length > 0) {
@@ -346,7 +347,7 @@ router.post('/sepet', async (req, res) => {
 
     try {
         if (!kullaniciID) {
-            kullaniciID = req.session.userID; 
+            kullaniciID = req.session.userID;
         }
 
         const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
@@ -419,7 +420,7 @@ router.post('/sepet', async (req, res) => {
 // ------------------ // SEPETTEKİ ÜRÜNÜ SİLME APİSİ // ------------------ //
 router.delete('/sepet/:urunID', async (req, res) => {
     const urunID = parseInt(req.params.urunID);
-    const kullaniciID = req.session.userID; 
+    const kullaniciID = req.session.userID;
     try {
         const sepetQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
         const [sepet] = await runQuery(sepetQuery, [kullaniciID]);
@@ -657,7 +658,7 @@ router.delete('/favoriler', async (req, res) => {
 
 // ------------------ // KART ÇEKME APİSİ // ------------------ //
 router.get('/kartlar', async (req, res) => {
-    const kullaniciID = req.session.userID; 
+    const kullaniciID = req.session.userID;
 
     if (!kullaniciID) {
         return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
@@ -712,7 +713,7 @@ router.post('/kartlar', async (req, res) => {
 // ------------------ // KART GÜNCELLEME APİSİ // ------------------ //
 router.put('/kartlar/:kartID', async (req, res) => {
     const kullaniciID = req.session.userID;
-    const kartID = req.params.kartID; 
+    const kartID = req.params.kartID;
     const { KartIsim, KartNumara, SonKullanmaTarih, CVV } = req.body;
 
     if (!kullaniciID) {
@@ -762,6 +763,103 @@ router.delete('/kartlar/:kartID', async (req, res) => {
     } catch (error) {
         console.error('Kart silinirken hata oluştu:', error.message);
         res.status(500).json({ success: false, message: 'Kart silinemedi.' });
+    }
+});
+
+// ------------------ // KURYE KISMI // ------------------ //
+
+router.get('/siparisler', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                siparis.SiparisID AS id,
+                siparis.UrunAd AS urun,
+                siparis.Tarih AS tarih,
+                siparis.Durum AS durum,
+                siparis.TeslimatKodu AS teslimatKodu,
+                kullanici.Ad AS ad,
+                kullanici.Soyad AS soyad,
+                adres.Sehir AS sehir,
+                adres.Ilce AS ilce
+            FROM siparis
+            INNER JOIN kullanici ON siparis.MusteriID = kullanici.KullaniciID
+            LEFT JOIN adres ON siparis.MusteriID = adres.KullaniciID;
+        `;
+
+        const results = await runQuery(query);
+
+        if (results.length === 0) {
+            return res.json({ success: true, data: [] }); 
+        }
+
+        res.json({ success: true, data: results });
+    } catch (error) {
+        console.error('Siparişler alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Siparişler alınamadı.' });
+    }
+});
+
+
+const generateRandomCode = () => Math.floor(10000 + Math.random() * 90000).toString();
+
+router.post('/siparis/guncelle', async (req, res) => {
+    const { siparisId, teslimatKodu, action, varisSuresi } = req.body;
+
+    try {
+        if (action === 'teslimAl') {
+            if (!varisSuresi) {
+                return res.status(400).json({ success: false, message: 'Varış süresi girilmelidir.' });
+            }
+
+            const randomCode = generateRandomCode();
+
+            const updateQuery = `
+                UPDATE siparis 
+                SET Durum = 'Yolda', TeslimatKodu = ?, varissuresi = ? 
+                WHERE SiparisID = ?
+            `;
+            await runQuery(updateQuery, [randomCode, varisSuresi, siparisId]);
+
+            return res.json({
+                success: true,
+                message: 'Sipariş "Yolda" olarak güncellendi ve teslimat kodu gönderildi.',
+                teslimatKodu: randomCode,
+            });
+        } else if (action === 'teslimEt') {
+            if (!teslimatKodu) {
+                return res.status(400).json({ success: false, message: 'Teslimat kodu girilmelidir.' });
+            }
+
+            const selectQuery = `
+                SELECT TeslimatKodu 
+                FROM siparis 
+                WHERE SiparisID = ?
+            `;
+            const result = await runQuery(selectQuery, [siparisId]);
+
+            if (!result.length || result[0].TeslimatKodu !== teslimatKodu) {
+                return res.status(400).json({ success: false, message: 'Geçersiz teslimat kodu.' });
+            }
+
+            const teslimTarihi = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const updateQuery = `
+                UPDATE siparis 
+                SET Durum = 'Teslim Edildi', TeslimatKodu = NULL, Tarih = ? 
+                WHERE SiparisID = ?
+            `;
+            await runQuery(updateQuery, [teslimTarihi, siparisId]);
+
+            return res.json({
+                success: true,
+                message: 'Sipariş başarıyla teslim edildi.',
+                teslimTarihi: teslimTarihi,
+            });
+        }
+
+        return res.status(400).json({ success: false, message: 'Geçersiz işlem.' });
+    } catch (error) {
+        console.error('Sipariş güncelleme hatası:', error.message);
+        res.status(500).json({ success: false, message: 'Sipariş güncellenemedi.' });
     }
 });
 

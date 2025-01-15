@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurye Paneli</title>
+    <link rel="stylesheet" href="kurye.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Kurye Paneli</h1>
+            <nav>
+                <ul>
+                    <li><a href="#" id="profile-tab" class="active">Profil</a></li>
+                    <li><a href="#" id="active-orders-tab">Aktif Siparişler</a></li>
+                    <li><a href="#" id="past-orders-tab">Geçmiş Siparişler</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section id="profile-section" class="tab-section">
+            <h2>Profil Bilgileri</h2>
+            <p>Ad: <span id="user-name">Ahmet</span></p>
+            <p>Email: <span id="user-email">ahmet@example.com</span></p>
+            <p>Telefon: <span id="user-phone">05551234567</span></p>
+            <p>Teslim Edilen Sipariş Sayısı: <span id="completed-orders-count">0</span></p>
+        </section>
+
+        <section id="active-orders-section" class="tab-section hidden">
+            <h2>Aktif Siparişler</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Alıcı</th>
+                        <th>Ürünler</th>
+                        <th>Adres</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="active-orders-body"></tbody>
+            </table>
+        </section>
+
+        <section id="past-orders-section" class="tab-section hidden">
+            <h2>Geçmiş Siparişler</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Alıcı</th>
+                        <th>Adres</th>
+                        <th>Durum</th>
+                        <th>Teslim Tarihi</th>
+                    </tr>
+                </thead>
+                <tbody id="delivered-orders-body"></tbody>
+            </table>
+        </section>
+    
+    <div id="delivery-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Modal Başlığı</h3>
+            <p id="modal-message">Modal Mesajı</p>
+            <div id="modal-input-container" class="hidden">
+                <input type="text" id="modal-input" placeholder="Teslimat Kodu">
+            </div>
+            <div id="modal-details" class="hidden">
+                <p><strong>Adres:</strong> <span id="modal-address"></span></p>
+                <p><strong>Ürünler:</strong> <span id="modal-products"></span></p>
+            </div>
+            <div class="modal-actions">
+                <button id="modal-confirm" class="btn success">Onayla</button>
+                <button id="modal-cancel" class="btn danger">İptal</button>
+            </div>
+        </div>
+    </div>
+    
+
+    <script src="kurye.js"></script>
+</body>
+</html>
