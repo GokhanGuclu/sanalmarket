@@ -1077,25 +1077,58 @@ router.get('/kampanya-urun', async (req, res) => {
 // Siparişleri listeleme
 router.get('/siparis', async (req, res) => {
     try {
-        const query = `SELECT * FROM siparis`;
+        const query = `
+            SELECT 
+                sp.SiparisID,
+                sp.ToplamFiyat,
+                sp.Durum,
+                sp.Tarih,
+                k.Ad AS MusteriAd,
+                k.Soyad AS MusteriSoyad
+            FROM 
+                siparis sp
+            JOIN 
+                sepet s ON sp.SepetID = s.SepetID
+            JOIN 
+                kullanici k ON s.KullaniciID = k.KullaniciID
+        `;
         const siparisler = await runQuery(query);
-        res.json(siparisler);
+        res.json({ siparisler });
     } catch (error) {
         console.error('Siparişler alınırken hata oluştu:', error.message);
         res.status(500).json({ error: 'Siparişler alınamadı.' });
     }
 });
 
+
+
 // Müşteri puanlarını listeleme
 router.get('/musteripuanlari', async (req, res) => {
     try {
-        const query = `SELECT * FROM yorumpuan`;
-        const puanlar = await runQuery(query);
-        res.json(puanlar);
+        const query = `
+            SELECT 
+                yp.YorumID,
+                yp.Puan,
+                yp.Yorum,
+                k.Ad AS MusteriAd,
+                k.Soyad AS MusteriSoyad,
+                sp.Tarih AS SiparisTarihi
+            FROM 
+                yorumpuan yp
+            JOIN 
+                siparis sp ON yp.SiparisID = sp.SiparisID
+            JOIN 
+                sepet s ON sp.SepetID = s.SepetID
+            JOIN 
+                kullanici k ON s.KullaniciID = k.KullaniciID
+        `;
+        const yorumlar = await runQuery(query);
+        res.json({ yorumlar });
     } catch (error) {
         console.error('Müşteri puanları alınırken hata oluştu:', error.message);
         res.status(500).json({ error: 'Müşteri puanları alınamadı.' });
     }
 });
+
 
 module.exports = router;

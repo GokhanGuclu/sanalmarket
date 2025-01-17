@@ -335,51 +335,80 @@ async function loadCampaigns() {
 }
 
 
+// Siparişleri Listeleme Fonksiyonu
 async function loadOrders() {
     try {
         const response = await fetch('/api/siparis');
         if (!response.ok) {
             throw new Error('Siparişler alınamadı.');
         }
-        const orders = await response.json();
+        const data = await response.json();
 
         const orderList = document.getElementById('order-list');
         orderList.innerHTML = '';
 
-        orders.forEach(order => {
-            const listItem = document.createElement('li');
-            // formatOrderItem fonksiyonunu kullanarak sipariş bilgilerini formatla
-            listItem.innerHTML = formatOrderItem(order); 
-            orderList.appendChild(listItem);
-        });
+        if (data && Array.isArray(data.siparisler)) {
+            data.siparisler.forEach(order => {
+                const listItem = document.createElement('li');
+
+                // Eğer "Urunler" boş ya da tanımlı değilse, kontrol ekliyoruz.
+                const urunlerListesi = Array.isArray(order.Urunler)
+                    ? order.Urunler.join(', ')
+                    : 'Ürün bilgisi mevcut değil';
+
+                listItem.innerHTML = `
+                    <strong>Sipariş ID:</strong> ${order.SiparisID} <br>
+                    <strong>Müşteri Adı:</strong> ${order.MusteriAdi || 'Bilinmiyor'} <br>
+                    <strong>Ürünler:</strong> ${urunlerListesi} <br>
+                    <strong>Toplam Tutar:</strong> ${order.ToplamTutar || '0.00'} TL <br>
+                    <strong>Sipariş Tarihi:</strong> ${order.SiparisTarihi || 'Tarih bilgisi yok'} <br>
+                `;
+                orderList.appendChild(listItem);
+            });
+        } else {
+            console.error('API yanıtı beklenen formatta değil:', data);
+            alert('Siparişler yüklenemedi!');
+        }
     } catch (error) {
         console.error('Siparişler yüklenirken hata oluştu:', error);
         alert('Siparişler yüklenemedi!');
     }
 }
 
+// Yorumları Listeleme Fonksiyonu
 async function loadReviews() {
     try {
         const response = await fetch('/api/musteripuanlari');
         if (!response.ok) {
             throw new Error('Yorumlar alınamadı.');
         }
-        const reviews = await response.json();
+        const data = await response.json();
 
         const reviewList = document.getElementById('review-list');
         reviewList.innerHTML = '';
 
-        reviews.forEach(review => {
-            const listItem = document.createElement('li');
-            // formatReviewItem fonksiyonunu kullanarak yorum bilgilerini formatla
-            listItem.innerHTML = formatReviewItem(review); 
-            reviewList.appendChild(listItem);
-        });
+        if (Array.isArray(data.yorumlar)) {
+            data.yorumlar.forEach(review => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <strong>Müşteri Adı:</strong> ${review.MusteriAdi} <br>
+                    <strong>Ürün:</strong> ${review.UrunAdi} <br>
+                    <strong>Puan:</strong> ${review.Puan} <br>
+                    <strong>Yorum:</strong> ${review.Yorum} <br>
+                    <strong>Yorum Tarihi:</strong> ${review.YorumTarihi} <br>
+                `;
+                reviewList.appendChild(listItem);
+            });
+        } else {
+            console.error('API yanıtı beklenen formatta değil:', data);
+            alert('Yorumlar yüklenemedi!');
+        }
     } catch (error) {
         console.error('Yorumlar yüklenirken hata oluştu:', error);
         alert('Yorumlar yüklenemedi!');
     }
 }
+
 // Sayfa yüklendiğinde çalışacak fonksiyonlar
 function initializePage() {
     loadOrders();
