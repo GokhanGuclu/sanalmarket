@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { runQuery, checkUser, addUser } = require('./sql');
+const multer = require('multer');
 
 // ------------------ // GİRİŞ KAYIT APİSİ // ------------------ //
 router.post('/login', async (req, res) => {
@@ -860,6 +861,240 @@ router.post('/siparis/guncelle', async (req, res) => {
     } catch (error) {
         console.error('Sipariş güncelleme hatası:', error.message);
         res.status(500).json({ success: false, message: 'Sipariş güncellenemedi.' });
+    }
+});
+
+// Dosya depolama ayarları
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'resimler/'); // Görsellerin kaydedileceği klasör
+    },
+    filename: function (req, file, cb) {
+        const uniqueFilename = uuidv4() + path.extname(file.originalname); // Benzersiz dosya adı
+        cb(null, uniqueFilename);
+    }
+});
+
+// Yükleme ayarları
+const { v4: uuidv4 } = require('uuid');
+
+// --- Görseller için Yükleme Middleware'i --- //
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Maksimum dosya boyutu: 5MB
+    fileFilter: (req, file, cb) => {
+        const fileTypes = /jpeg|jpg|png|gif/;
+        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimeType = fileTypes.test(file.mimetype);
+
+        if (extname && mimeType) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Sadece resim dosyaları yüklenebilir!'));
+        }
+    }
+});
+
+// --- Ürün Görseli Yükleme API'si --- //
+router.post('/urun/gorsel', upload.single('urunGorsel'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Dosya yüklenemedi.' });
+    }
+
+    const gorselYolu = `/resimler/${req.file.filename}`; // Resim dosyasının kaydedildiği yol
+    res.json({ success: true, gorselYolu });
+});
+
+router.post('/urun', upload.single('Gorsel'), async (req, res) => {
+    try {
+        const { UrunAdi, UrunFiyat, Aciklama, Kategori, Stok } = req.body;
+        const Gorsel = req.file ? req.file.filename : null; // Yüklenen dosya adı
+
+        if (!Gorsel) {
+            return res.status(400).json({ message: 'Görsel yüklenemedi.' });
+        }
+
+        // Veritabanına kaydetme işlemi
+        const query = `
+            INSERT INTO urun (UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel)
+            VALUES (?, ?, ?, ?, ?, ?);
+        `;
+
+        await runQuery(query, [UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel]);
+
+        res.status(201).json({ message: 'Ürün başarıyla eklendi!' });
+    } catch (error) {
+        console.error('Ürün eklenirken hata oluştu:', error);
+        res.status(500).json({ message: 'Ürün eklenemedi.' });
+    }
+});
+
+router.get('/urun', async (req, res) => {
+    try {
+        const query = `
+            SELECT UrunID, UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel
+            FROM urun;
+        `;
+
+        const urunler = await runQuery(query);
+
+        // Görsellerin tam URL'sini oluştur
+        const urunlerWithImages = urunler.map(urun => ({
+            ...urun,
+            Gorsel: urun.Gorsel ? `/resimler/${urun.Gorsel}` : null
+        }));
+
+        res.json({ success: true, urunler: urunlerWithImages });
+    } catch (error) {
+        console.error('Ürünler alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Ürünler alınamadı.' });
+    }
+});
+
+router.put('/urun/stok-guncelle', async (req, res) => {
+    const { UrunAdi, yeniStok } = req.body;
+
+    try {
+        // 1. Gelişmiş Veri Doğrulama
+        if (yeniStok < 0) {
+            return res.status(400).json({ message: 'Stok değeri negatif olamaz.' });
+        }
+        if (typeof UrunAdi !== 'string' || UrunAdi.trim() === '') {
+            return res.status(400).json({ message: 'Geçerli bir ürün adı girmelisiniz.' });
+        }
+
+        // 2. Parametreli Sorgu (SQL Injection Koruması)
+        const query = `
+            UPDATE urun
+            SET Stok = ?
+            WHERE UrunAdi = ?;
+        `;
+
+        const result = await runQuery(query, [yeniStok, UrunAdi]);
+
+        // 3. Detaylı Hata Ayıklama
+        if (result.affectedRows === 0) {
+            console.error('Ürün bulunamadı:', UrunAdi); // Hangi ürünün bulunamadığını logla
+            return res.status(404).json({ message: 'Ürün bulunamadı.' });
+        }
+
+        res.json({ message: 'Stok başarıyla güncellendi.' });
+    } catch (error) {
+        console.error('Stok güncelleme hatası:', error);
+        res.status(500).json({
+            message: 'Stok güncelleme başarısız oldu.',
+            error: error.message // Hata mesajını istemciye gönder (geliştirme ortamında)
+        });
+    }
+});
+
+router.get('/kampanya', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                i.IndirimOrani, 
+                i.KampanyaAdi,
+                u.UrunAdi, 
+                u.UrunFiyat, 
+                u.Kategori, 
+                u.Stok, 
+                u.Aciklama, 
+                u.Gorsel
+            FROM indirim i
+            LEFT JOIN urun u ON i.UrunID = u.UrunID;
+        `;
+        const kampanyalar = await runQuery(query);
+        console.log(kampanyalar); // Kampanyalar verisini kontrol et
+
+        if (!kampanyalar || kampanyalar.length === 0) {
+            return res.status(404).json({ message: 'Aktif kampanya bulunamadı.' });
+        }
+
+        res.json({ kampanyalar }); // Kampanyaları JSON formatında döndür
+    } catch (error) {
+        console.error('Kampanyalar alınamadı:', error);
+        res.status(500).json({ message: 'Kampanya verileri alınamadı.', error: error.message });
+    }
+});
+
+
+// kampanya ekleme 
+
+router.post('/kampanya-ekle', async (req, res) => {
+    const { kampanyaAdi, indirimOrani, kategori, urunler } = req.body;
+
+    try {
+        // Kategori kontrolü
+        if (kategori) {
+            const query = `
+                INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
+                SELECT UrunID, ?, ?
+                FROM urun
+                WHERE Kategori = ?;
+            `;
+            await runQuery(query, [indirimOrani, kampanyaAdi, kategori]);
+        }
+
+        // Ürün listesi kontrolü
+        if (urunler && urunler.length > 0) {
+            for (const urunAdi of urunler) {
+                const urunKontrol = await runQuery('SELECT UrunID FROM urun WHERE UrunAdi = ?', [urunAdi]);
+                if (urunKontrol.length === 0) {
+                    return res.status(400).json({ message: 'Ürün "${UrunAdi}" bulunamadı.' });
+                }
+            }
+
+            // Kampanya ekleme
+            const query = `
+                INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
+                SELECT UrunID, ?, ?
+                FROM urun
+                WHERE UrunAdi IN (?);
+            `;
+            await runQuery(query, [indirimOrani, kampanyaAdi, urunler]);
+        }
+
+        res.json({ success: true, message: 'Kampanya başarıyla eklendi!' });
+    } catch (error) {
+        console.error('Kampanya ekleme hatası:', error);
+        res.status(500).json({ message: 'Kampanya ekleme başarısız oldu.' });
+    }
+});
+
+
+// Kampanya ürünqleri listeleme
+router.get('/kampanya-urun', async (req, res) => {
+    try {
+        const query = 'SELECT UrunAdi, UrunID FROM urun';
+        const urunler = await runQuery(query);
+        res.json({ urunler }); // Ürünleri JSON formatında döndür
+    } catch (error) {
+        console.error('Ürünler alınamadı:', error);
+        res.status(500).json({ message: 'Ürün verileri alınamadı.', error: error.message });
+    }
+});
+
+// Siparişleri listeleme
+router.get('/siparis', async (req, res) => {
+    try {
+        const query = `SELECT * FROM siparis`;
+        const siparisler = await runQuery(query);
+        res.json(siparisler);
+    } catch (error) {
+        console.error('Siparişler alınırken hata oluştu:', error.message);
+        res.status(500).json({ error: 'Siparişler alınamadı.' });
+    }
+});
+
+// Müşteri puanlarını listeleme
+router.get('/musteripuanlari', async (req, res) => {
+    try {
+        const query = `SELECT * FROM yorumpuan`;
+        const puanlar = await runQuery(query);
+        res.json(puanlar);
+    } catch (error) {
+        console.error('Müşteri puanları alınırken hata oluştu:', error.message);
+        res.status(500).json({ error: 'Müşteri puanları alınamadı.' });
     }
 });
 

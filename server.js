@@ -10,8 +10,8 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: { 
-        secure: false,  // Geliştirme ortamında false, prodüksiyon ortamında true olmalı
-        maxAge: 24 * 60 * 60 * 1000  // 1 gün (24 saat) = 86400000 milisaniye
+        secure: false, 
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
