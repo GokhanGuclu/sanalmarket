@@ -21,6 +21,18 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.post('/logout', (req, res) => {
+    // Oturumu sonlandır
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).send('Oturum sonlandırılamadı');
+        }
+        res.clearCookie('connect.sid'); // Oturum çereziyi temizle
+        res.status(200).send('Çıkış yapıldı');
+    });
+});
+
+
 router.get('/kullanici', (req, res) => {
     if (req.session.userID) {
         res.json({ success: true, userID: req.session.userID });

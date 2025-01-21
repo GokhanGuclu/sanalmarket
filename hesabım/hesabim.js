@@ -6,6 +6,34 @@ window.addEventListener('DOMContentLoaded', () => {
     kullaniciBilgileriniYukle()
 });
 
+// Çıkış yap butonunu seç
+const logoutButton = document.querySelector('.logout');
+
+// Eğer buton varsa, tıklama olayını ekleyelim
+if (logoutButton) {
+    logoutButton.addEventListener('click', function(event) {
+        event.preventDefault(); // Varsayılan davranışı engelle
+
+        // Çıkış yapma işlemi (API üzerinden oturumu sonlandırmak)
+        fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'same-origin', // Same-origin ile aynı oturumu kullanarak gönderme
+        })
+        .then(response => {
+            if (response.ok) {
+                // Oturum başarıyla sonlandırıldıysa, anasayfaya yönlendir
+                window.location.href = '/'; // Ana sayfaya yönlendir
+            } else {
+                console.error('Çıkış yapılırken bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Çıkış yapma işlemi sırasında bir hata oluştu:', error);
+        });
+    });
+}
+
+
 function kullaniciBilgileriniYukle() {
     fetch('/api/kullanicibilgi', { credentials: 'include' })
         .then(response => response.json())
