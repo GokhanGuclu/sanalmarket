@@ -1,4 +1,3 @@
-/* styles.css */
 body {
     margin: 0;
     font-family: 'Roboto', sans-serif;
@@ -22,7 +21,7 @@ body {
     flex-direction: column;
     height: calc(100vh - 80px);
     padding: 20px;
-    margin-top: -200px; /* Adjust for better vertical alignment */
+    margin-top: -200px; 
 }
 
 .box {
@@ -33,7 +32,7 @@ body {
     width: 100%;
     max-width: 450px;
     text-align: center;
-    transition: all 0.3s ease; /* Ensure smooth transitions for all properties */
+    transition: all 0.3s ease;
 }
 
 .box h2 {
@@ -96,33 +95,30 @@ body {
 .footer-links a:hover {
     color: #0056b3;
     text-decoration: underline;
-    transform: translateY(-2px); /* Slight hover effect */
+    transform: translateY(-2px);
 }
 
 .footer-links a:active {
     color: #003366;
-    transform: translateY(1px); /* Slight press effect */
+    transform: translateY(1px);
 }
 
 .footer-links a + a {
-    margin-left: 20px; /* Add space between the links */
+    margin-left: 20px; 
 }
 
-/* Add transition to the register box */
 #register-box {
     display: none;
-    max-height: 0;  /* Start with no height */
-    overflow: hidden;  /* Hide content that goes outside */
-    transition: max-height 0.5s ease-out;  /* Smooth transition for max-height */
+    max-height: 0;  
+    overflow: hidden;  
+    transition: max-height 0.5s ease-out;  
 }
 
-/* This will be applied when the register box is visible */
 #register-box.show {
     display: block;
-    max-height: 800px;  /* Set a max-height to allow the content to expand */
+    max-height: 800px;  
 }
 
-/* Optional: to make the boxes have padding and keep layout neat */
 .box {
     padding: 20px;
     box-sizing: border-box;

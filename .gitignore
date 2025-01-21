@@ -1,21 +1,15 @@
-# Ortam değişkenleri
 .env
 
-# Node.js bağımlılıkları
 node_modules/
 
-# Log dosyaları
 *.log
 logs/
 
-# Derlenmiş dosyalar
 dist/
 build/
 
-# IDE ve editör dosyaları
 .vscode/
 .idea/
 
-# Sistem dosyaları
 .DS_Store
 Thumbs.db

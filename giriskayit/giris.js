@@ -2,7 +2,6 @@ function loginUser() {
     const email = document.querySelector('#login-box input[type="email"]').value;
     const password = document.querySelector('#login-box input[type="password"]').value;
 
-    // Giriş işlemi için kontrol
     if (!email || !password) {
         alert('Lütfen tüm alanları doldurun.');
         return;
@@ -22,7 +21,7 @@ function loginUser() {
         .then(data => {
             if (data.success) {
                 alert(`Hoş geldiniz, ${data.user.name}`);
-                window.location.href = '/'; // Ana sayfaya yönlendir
+                window.location.href = '/';
             } else {
                 throw new Error(data.message || 'Giriş başarısız.');
             }
@@ -37,13 +36,11 @@ function registerUser() {
     const telefon = document.querySelector('#telefon').value;
     const password = document.querySelector('#password').value;
 
-    // Tüm alanların doldurulduğundan emin olun
     if (!ad || !soyad || !email || !telefon || !password) {
         alert('Lütfen tüm alanları doldurun.');
         return;
     }
 
-    // API'ye istek gönder
     fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +50,7 @@ function registerUser() {
         .then(data => {
             if (data.success) {
                 alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
-                showLoginBox(); // Giriş ekranına yönlendir
+                showLoginBox();
             } else {
                 throw new Error(data.message);
             }
@@ -68,13 +65,12 @@ function showRegisterBox() {
     const registerBox = document.getElementById('register-box');
     registerBox.style.display = 'block';
     setTimeout(() => {
-        registerBox.classList.add('show'); // Geçiş animasyonunu başlat
-    }, 10); // küçük bir zaman gecikmesiyle animasyon başlatılır
+        registerBox.classList.add('show');
+    }, 10);
 }
 
 
 function showLoginBox() {
-    // Üye ol kutusunu gizle, Giriş kutusunu göster
     document.getElementById('register-box').style.display = 'none';
     const loginBox = document.getElementById('login-box');
     loginBox.style.display = 'block';

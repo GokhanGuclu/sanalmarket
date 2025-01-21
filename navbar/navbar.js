@@ -10,16 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(err => console.error('Adres verileri çekilirken hata:', err));
     loadCartFromServer().then(updateCartDropdown);
-});
 
-document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/kullanicibilgi')
         .then(response => response.json())
         .then(data => {
             const loginButton = document.querySelector('.nav-item1[onclick*="/giriskayit/"]');
 
             if (data.success && loginButton) {
-                // Kullanıcı adı butona yazılıyor
                 const userName = data.kullanici.Ad;
                 const lastName = data.kullanici.Soyad;
                 loginButton.innerHTML = `
@@ -27,11 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${userName} ${lastName}</span>
                 `;
 
-                // Giriş yap yerine hesabım sayfasına yönlendirme
                 loginButton.setAttribute('onclick', "window.location.href='/hesabım';");
             }
         })
         .catch(err => console.error('Kullanıcı bilgisi alınırken hata:', err));
+
+    fetchUserOrdersAndUpdateNavbar();
 });
 
 
@@ -95,7 +93,7 @@ function selectAddress(adres) {
         `;
     }
 
-    console.log('Gönderilen adres ID:', adres.AdresID); // Kontrol için ekledik
+    console.log('Gönderilen adres ID:', adres.AdresID); 
 
     fetch('/api/adres/secilen', {
         method: 'PUT',
@@ -182,7 +180,7 @@ function updateCartDropdown() {
                 <p class="cart-total" style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
                     Toplam: ${toplamFiyat.toFixed(2)} TL
                 </p>
-                <button class="go-to-cart-btn" style="background-color: #ffc107; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;" onclick="window.location.href='/sepets/'">
+                <button class="go-to-cart-btn" style="background-color: #ffc107; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;" onclick="window.location.href='/sepet/'">
                     Sepete Git
                 </button>
             </div>
@@ -301,6 +299,47 @@ function searchProducts() {
     const aramaTermi = document.getElementById('searchInput').value;
     if (aramaTermi.trim() === '') return;
 
-    const kategoriAdi = window.location.pathname.split('/')[2]; // Kategori adını URL'den al
+    const kategoriAdi = window.location.pathname.split('/')[2]; 
     window.location.href = `/kategori/${kategoriAdi}?arama=${aramaTermi}`;
+}
+
+function fetchUserOrdersAndUpdateNavbar() {
+    fetch('/api/kullanici/siparisler')
+        .then(response => response.json())
+        .then(data => {
+            console.log(data); 
+
+            if (data.success && data.data.length > 0) {
+                const preparingOrder = data.data.find(order => order.durum === 'Hazırlanıyor');
+                const onTheWayOrder = data.data.find(order => order.durum === 'Yolda');
+                const orderStatusBtn = document.getElementById('order-status-btn');
+                const orderStatusText = document.getElementById('order-status');
+
+                const formatTime = (time) => {
+                    if (!time) return null;
+                    const [hours, minutes, seconds] = time.split(':').map(Number);
+
+                    if (hours > 0) return `${hours} saat`;
+                    if (minutes > 0) return `${minutes} dk`;
+                    if (seconds > 0) return `${seconds} saniye`;
+                    else return "Az zaman kaldı."
+                };
+
+                if (preparingOrder) {
+                    if (orderStatusText) {
+                        orderStatusText.innerHTML = '<strong>Durum:</strong> Hazırlanıyor...';
+                    }
+                    orderStatusBtn.style.display = 'inline-block';
+                } else if (onTheWayOrder) {
+                    const varisSuresi = formatTime(onTheWayOrder.varis);
+                    if (orderStatusText) {
+                        orderStatusText.innerHTML = `<strong>Tahmini Varış:</strong> ${varisSuresi}`;
+                    }
+                    orderStatusBtn.style.display = 'inline-block';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Siparişler alınırken hata oluştu:', error);
+        });
 }

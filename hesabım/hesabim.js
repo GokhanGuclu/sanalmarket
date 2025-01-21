@@ -6,23 +6,19 @@ window.addEventListener('DOMContentLoaded', () => {
     kullaniciBilgileriniYukle()
 });
 
-// Çıkış yap butonunu seç
 const logoutButton = document.querySelector('.logout');
 
-// Eğer buton varsa, tıklama olayını ekleyelim
 if (logoutButton) {
     logoutButton.addEventListener('click', function(event) {
-        event.preventDefault(); // Varsayılan davranışı engelle
+        event.preventDefault(); 
 
-        // Çıkış yapma işlemi (API üzerinden oturumu sonlandırmak)
         fetch('/api/logout', {
             method: 'POST',
-            credentials: 'same-origin', // Same-origin ile aynı oturumu kullanarak gönderme
+            credentials: 'same-origin', 
         })
         .then(response => {
             if (response.ok) {
-                // Oturum başarıyla sonlandırıldıysa, anasayfaya yönlendir
-                window.location.href = '/'; // Ana sayfaya yönlendir
+                window.location.href = '/'; 
             } else {
                 console.error('Çıkış yapılırken bir hata oluştu.');
             }
@@ -462,45 +458,37 @@ function siparisleriYukle() {
         .catch(error => console.error('Siparişler yüklenirken hata oluştu:', error));
 }
 
-// Puan verme fonksiyonu (Bu fonksiyonu isteğinize göre şekillendirebilirsiniz)
 function puanVer(siparisID) {
-    // Puanlama modal'ını açalım
-    const puanlamaModal = document.getElementById('puanlamaModal'); // Doğru modal id'sini hedefleyin
-    puanlamaModal.style.display = 'flex'; // Modal'ı göster
+    const puanlamaModal = document.getElementById('puanlamaModal');
+    puanlamaModal.style.display = 'flex'; 
 
-    // Sipariş ID'yi kaydedelim, yorum ve puanlama işlemi için
     document.getElementById('siparisIDInput').value = siparisID;
 }
 
-let selectedRating = 0;  // Başlangıçta herhangi bir puan verilmedi
+let selectedRating = 0;  
 
-// Yıldızlara tıklandığında çalışacak fonksiyon
 function setRating(rating) {
-    selectedRating = rating;  // Seçilen puan değerini kaydediyoruz
-    updateStars(rating);  // Yıldızları güncelle
+    selectedRating = rating; 
+    updateStars(rating);
 }
 
-// Yıldızları güncelleme fonksiyonu
 function updateStars(rating) {
     document.querySelectorAll('.star').forEach((star, index) => {
         if (index < rating) {
-            star.classList.add('selected');  // Seçilen yıldızları sarıya döner
+            star.classList.add('selected');
         } else {
-            star.classList.remove('selected');  // Diğer yıldızları gri yapar
+            star.classList.remove('selected');
         }
     });
 
-    // Seçilen puan değerini kaydediyoruz
     console.log(`Seçilen puan: ${rating}`);
 }
 
-// Sayfa yüklendiğinde yıldızların renklerini güncelle
 document.addEventListener('DOMContentLoaded', function() {
-    updateStars(selectedRating);  // Sayfa yüklendiğinde daha önce seçilen puan varsa, o kadar yıldız sarı olmalı
+    updateStars(selectedRating);
 });
 
 
-// Sipariş Detayı Gösterme
 function siparisDetayGoster(siparisID) {
     fetch(`/api/siparisler-cek/detay/${siparisID}`)
         .then(response => response.json())
@@ -524,7 +512,6 @@ function siparisDetayGoster(siparisID) {
         .catch(error => console.error('Sipariş detayları yüklenirken hata oluştu:', error));
 }
 
-// Modal Kapatma
 function modalKapat() {
     const siparisModal = document.getElementById('siparisModal');
     const puanlamaModal = document.getElementById('puanlamaModal');
@@ -553,7 +540,7 @@ function yorumKaydet() {
     .then(data => {
         if (data.success) {
             alert("Yorum ve puan başarıyla kaydedildi.");
-            modalKapat();  // Yorum kaydedildikten sonra modalı kapat
+            modalKapat();  
         } else {
             alert("Bir hata oluştu, lütfen tekrar deneyin.");
         }
@@ -598,9 +585,9 @@ function createStars(puan) {
     let starsHtml = '';
     for (let i = 1; i <= 5; i++) {
         if (i <= puan) {
-            starsHtml += `<div class="yildiz dolu"></div>`; // Dolu yıldız
+            starsHtml += `<div class="yildiz dolu"></div>`; 
         } else {
-            starsHtml += `<div class="yildiz"></div>`; // Boş yıldız
+            starsHtml += `<div class="yildiz"></div>`;
         }
     }
     return starsHtml;
@@ -618,10 +605,10 @@ function formatTarih(tarih) {
 function formatPuanTarih(tarih) {
     const date = new Date(tarih);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // 01-12
-    const day = String(date.getDate()).padStart(2, '0'); // 01-31
-    const hours = String(date.getHours()).padStart(2, '0'); // 00-23
-    const minutes = String(date.getMinutes()).padStart(2, '0'); // 00-59
+    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const day = String(date.getDate()).padStart(2, '0'); 
+    const hours = String(date.getHours()).padStart(2, '0'); 
+    const minutes = String(date.getMinutes()).padStart(2, '0');
 
     return `${year}-${month}-${day} / ${hours}-${minutes}`;
 }

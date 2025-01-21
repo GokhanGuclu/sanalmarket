@@ -41,7 +41,7 @@ router.get('/kullanici', (req, res) => {
 });
 
 router.get('/kullanicibilgi', async (req, res) => {
-    const kullaniciID = req.session.userID; // Oturumdaki kullanıcı ID
+    const kullaniciID = req.session.userID;
 
     if (!kullaniciID) {
         return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
@@ -164,7 +164,7 @@ router.get('/kategori/:urunAdi', async (req, res) => {
             return res.status(404).json({ message: 'Ürün bulunamadı.' });
         }
 
-        res.json(urun[0]); // Ürün bilgilerini döndürüyoruz
+        res.json(urun[0]);
     } catch (error) {
         console.error('Veritabanı hatası:', error.message);
         res.status(500).json({ error: 'Ürün bilgisi alınırken bir hata oluştu.' });
@@ -310,7 +310,6 @@ router.put('/adres/secilen', async (req, res) => {
     }
 
     try {
-        // Tüm adresleri sıfırla
         const resetQuery = `
             UPDATE Adres
             SET SecilenAdres = false
@@ -318,7 +317,6 @@ router.put('/adres/secilen', async (req, res) => {
         `;
         await runQuery(resetQuery, [kullaniciID]);
 
-        // Seçilen adresi güncelle
         const updateQuery = `
             UPDATE Adres
             SET SecilenAdres = true
@@ -412,7 +410,6 @@ router.post('/sepet', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Kullanıcı oturum açmamış.' });
         }
 
-        // Aktif sepete göre işlem yapalım
         const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ? AND SepetAktif = 1;`;
         let [sepet] = await runQuery(findCartQuery, [kullaniciID]);
 
@@ -450,7 +447,7 @@ router.post('/sepet', async (req, res) => {
             ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
             : orijinalFiyat;
 
-        const toplamFiyat = (indirimliFiyat * 1).toFixed(2); // urunSayisi 1 olarak sabitlendi
+        const toplamFiyat = (indirimliFiyat * 1).toFixed(2); 
 
         const checkProductQuery = `
             SELECT UrunSayisi, UrunFiyat 
@@ -564,11 +561,9 @@ router.put('/sepet/:urunID', async (req, res) => {
 
         let yeniMiktar = urun.UrunSayisi + delta;
         if (yeniMiktar <= 0) {
-            // Ürünü sepetten kaldır
             const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
             await runQuery(deleteQuery, [urunID, sepetID]);
         } else {
-            // Ürünü güncelle
             const updateQuery = `UPDATE SepetUrunleri SET UrunSayisi = ? WHERE UrunID = ? AND SepetID = ?;`;
             await runQuery(updateQuery, [yeniMiktar, urunID, sepetID]);
         }
@@ -845,7 +840,6 @@ router.post('/yorum-puan', async (req, res) => {
     }
 
     try {
-        // Veritabanına kaydetme
         const query = `
             INSERT INTO yorumpuan (KullaniciID, SiparisID, Puan, Yorum)
             VALUES (?, ?, ?, ?)
@@ -884,9 +878,7 @@ router.get('/siparisler-cek', async (req, res) => {
         `;
         const siparisler = await runQuery(query, [kullaniciID]);
 
-        // Puanlanmış siparişlere sahip olup olmadığını kontrol et
         siparisler.forEach(siparis => {
-            // Puanlanmışsa, "puanVer" butonunu engelle
             siparis.Puanlanmis = siparis.Puanlanmis > 0;
         });
 
@@ -910,7 +902,6 @@ router.get('/siparisler-cek/detay/:siparisID', async (req, res) => {
     }
 
     try {
-        // Siparişin SepetID'sini bulalım
         const siparisQuery = `
             SELECT SepetID
             FROM siparis
@@ -926,7 +917,6 @@ router.get('/siparisler-cek/detay/:siparisID', async (req, res) => {
 
         const sepetID = siparis[0].SepetID;
 
-        // Siparişe ait ürünleri çekelim
         const urunQuery = `
             SELECT su.UrunID, su.UrunSayisi AS Adet, su.UrunFiyat AS Fiyat, u.UrunAdi, u.Aciklama, u.Gorsel
             FROM sepeturunleri AS su
@@ -977,53 +967,116 @@ router.get('/siparis-puanlari', async (req, res) => {
 
 router.post('/siparis-olustur', async (req, res) => {
     const kullaniciId = req.session.userID;
-  
+
     try {
-      const sepetQuery = `
-        SELECT SepetID 
-        FROM sepet 
-        WHERE KullaniciID = ? AND SepetAktif = 1
-      `;
-      const sepetResult = await runQuery(sepetQuery, [kullaniciId]);
-  
-      if (sepetResult.length === 0) {
-        return res.status(400).json({ success: false, message: 'Aktif sepet bulunamadı.' });
-      }
-  
-      const sepetId = sepetResult[0].SepetID;
-  
-      const siparisQuery = `
-        INSERT INTO siparis (SepetID, ToplamFiyat, Durum, Tarih, Adres) 
-        VALUES (?, (SELECT SepetFiyat FROM sepet WHERE SepetID = ?), 'Hazırlanıyor', NOW(), 
-        (
-          SELECT CONCAT(AdresAciklama, ', ', Ilce, '/', Sehir) 
-          FROM adres
-          INNER JOIN kullanici ON adres.KullaniciID = kullanici.KullaniciID
-          WHERE kullanici.KullaniciID = ? AND adres.SecilenAdres = 1
-        ))
-      `;
-      await runQuery(siparisQuery, [sepetId, sepetId, kullaniciId]);
-  
-      const updateSepetQuery = `
-        UPDATE sepet 
-        SET SepetAktif = 0 
-        WHERE SepetID = ?
-      `;
-      await runQuery(updateSepetQuery, [sepetId]);
-      
-      const newSepetQuery = `
-        INSERT INTO sepet (KullaniciID, SepetFiyat, SepetAktif)
-        VALUES (?, 0.00, true)
-      `;
+        const sepetQuery = `
+            SELECT SepetID 
+            FROM sepet 
+            WHERE KullaniciID = ? AND SepetAktif = 1
+        `;
+        const sepetResult = await runQuery(sepetQuery, [kullaniciId]);
 
-      await runQuery(newSepetQuery, [kullaniciId]);
+        if (sepetResult.length === 0) {
+            return res.status(400).json({ success: false, message: 'Aktif sepet bulunamadı.' });
+        }
 
-      return res.json({ success: true, message: 'Sipariş başarıyla oluşturuldu.' });
+        const sepetId = sepetResult[0].SepetID;
+
+        const sepetUrunleriQuery = `
+            SELECT su.UrunID, su.UrunSayisi, u.Stok, u.UrunAdi 
+            FROM sepeturunleri su
+            INNER JOIN urun u ON su.UrunID = u.UrunID
+            WHERE su.SepetID = ?
+        `;
+        const sepetUrunleri = await runQuery(sepetUrunleriQuery, [sepetId]);
+
+        const yetersizStok = sepetUrunleri.find(item => item.UrunSayisi > item.Stok);
+
+        if (yetersizStok) {
+            return res.status(400).json({
+                success: false,
+                message: `Stok yetersiz: ${yetersizStok.UrunAdi} (${yetersizStok.UrunSayisi} isteniyor, stok: ${yetersizStok.Stok}).`
+            });
+        }
+
+        const siparisQuery = `
+            INSERT INTO siparis (SepetID, ToplamFiyat, Durum, Tarih, Adres) 
+            VALUES (?, (SELECT SepetFiyat FROM sepet WHERE SepetID = ?), 'Hazırlanıyor', NOW(), 
+            (
+                SELECT CONCAT(AdresAciklama, ', ', Ilce, '/', Sehir) 
+                FROM adres
+                INNER JOIN kullanici ON adres.KullaniciID = kullanici.KullaniciID
+                WHERE kullanici.KullaniciID = ? AND adres.SecilenAdres = 1
+            ))
+        `;
+        await runQuery(siparisQuery, [sepetId, sepetId, kullaniciId]);
+
+        const stokDusurQuery = `
+            UPDATE urun
+            SET Stok = Stok - ?
+            WHERE UrunID = ?
+        `;
+        for (const item of sepetUrunleri) {
+            await runQuery(stokDusurQuery, [item.UrunSayisi, item.UrunID]);
+        }
+
+        const updateSepetQuery = `
+            UPDATE sepet 
+            SET SepetAktif = 0 
+            WHERE SepetID = ?
+        `;
+        await runQuery(updateSepetQuery, [sepetId]);
+
+        const newSepetQuery = `
+            INSERT INTO sepet (KullaniciID, SepetFiyat, SepetAktif)
+            VALUES (?, 0.00, true)
+        `;
+        await runQuery(newSepetQuery, [kullaniciId]);
+
+        return res.json({ success: true, message: 'Sipariş başarıyla oluşturuldu.' });
     } catch (error) {
-      console.error('Sipariş oluşturma hatası:', error.message);
-      res.status(500).json({ success: false, message: 'Sipariş oluşturulamadı.' });
+        console.error('Sipariş oluşturma hatası:', error.message);
+        return res.status(500).json({ success: false, message: 'Sipariş oluşturulamadı.' });
     }
-  });
+});
+
+router.get('/kullanici/siparisler', async (req, res) => {
+    const kullaniciId = req.session.userID;
+
+    if (!kullaniciId) {
+        return res.status(401).json({ success: false, message: 'Kullanıcı kimliği sağlanamadı.' });
+    }
+
+    try {
+        const query = `
+            SELECT 
+                siparis.SiparisID AS id,
+                siparis.Tarih AS tarih,
+                siparis.Durum AS durum,
+                siparis.TeslimatKodu AS teslimatKodu,
+                siparis.VarisSuresi AS varis,
+                kullanici.Ad AS ad,
+                kullanici.Soyad AS soyad,
+                kullanici.Mail AS mail,
+                siparis.Adres AS adres 
+            FROM siparis
+            INNER JOIN sepet ON siparis.SepetID = sepet.SepetID
+            INNER JOIN kullanici ON sepet.KullaniciID = kullanici.KullaniciID
+            WHERE kullanici.KullaniciID = ?;
+        `;
+
+        const results = await runQuery(query, [kullaniciId]);
+
+        if (results.length === 0) {
+            return res.json({ success: true, data: [] }); 
+        }
+
+        res.json({ success: true, data: results });
+    } catch (error) {
+        console.error('Kullanıcı siparişleri alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Siparişler alınamadı.' });
+    }
+});
 
 // ------------------ // KURYE KISMI // ------------------ //
 
@@ -1081,7 +1134,6 @@ async function dogrulamaKoduMail(alicimail, kod) {
         console.log("E-posta gönderildi: %s", info.messageId);
     } catch (error) {
         console.error("E-posta gönderilemedi:", error);
-        // Hata yönetimi ekleyin (örneğin, kullanıcıya bir hata mesajı döndürme)
     }
 }
 
@@ -1106,7 +1158,6 @@ async function siparisBilgilendirmeMail(alicimail, konu, mesaj) {
         console.log("E-posta gönderildi: %s", info.messageId);
     } catch (error) {
         console.error("E-posta gönderilemedi:", error);
-        // Hata yönetimi ekleyin (örneğin, kullanıcıya bir hata mesajı döndürme)
     }
 }
 

@@ -154,7 +154,7 @@ li button:hover {
 }
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive sütunlar */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
   }
   
@@ -166,9 +166,9 @@ li button:hover {
   .product-item img {
     max-width: 100%;
     height: auto;
-    display: block; /* Resmin altındaki boşluğu kaldırır */
+    display: block; 
     margin-left: auto;
-    margin-right: auto; /* Resmi ortalar */
+    margin-right: auto; 
   }
 
 .product-card {

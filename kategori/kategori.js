@@ -1,4 +1,3 @@
-// Navbar Yükleme
 fetch('../navbar/navbar.html')
     .then(response => response.text())
     .then(data => {
@@ -8,7 +7,7 @@ fetch('../navbar/navbar.html')
     .catch(error => console.error('Navbar yüklenirken hata oluştu:', error));
 
 const urlPath = window.location.pathname;
-const kategoriAdi = urlPath.split('/')[2]; // Kategori adını URL'den al
+const kategoriAdi = urlPath.split('/')[2]; 
 
 if (!kategoriAdi) {
     window.location.href = '/404/';
@@ -36,26 +35,24 @@ fetch('/api/kullanici', { credentials: 'include' })
     });
 
 function urunleriYukle() {
-    const aramaTermi = new URLSearchParams(window.location.search).get('arama'); // URL'den arama terimini al
+    const aramaTermi = new URLSearchParams(window.location.search).get('arama'); 
 
     if (aramaTermi) {
-        // Arama terimi varsa arama API'sini çağırıyoruz
         fetch(`/api/ara/urun?arama=${aramaTermi}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.urunler.length > 0) {
-                    sepetVeFavorileriYukle(data.urunler); // Ürünleri yükle
+                    sepetVeFavorileriYukle(data.urunler); 
                 } else {
                     console.warn('Arama sonucu bulunamadı!');
-                    window.location.href = '/404/'; // Arama sonucu yoksa 404 sayfasına yönlendir
+                    window.location.href = '/404/'; 
                 }
             })
             .catch(error => {
                 console.error('Arama sırasında hata oluştu:', error.message);
-                window.location.href = '/404/'; // Arama hatası durumunda 404 sayfasına yönlendir
+                window.location.href = '/404/';
             });
     } else {
-        // Arama terimi yoksa kategoriye ait ürünleri yüklüyoruz
         fetch(`/api/urunler/${kategoriAdi}`)
             .then(response => response.json())
             .then(urunListesi => {
@@ -63,15 +60,15 @@ function urunleriYukle() {
 
                 if (!urunListesi || urunListesi.length === 0) {
                     console.warn('Bu kategoride ürün bulunamadı!');
-                    window.location.href = '/404/'; // Ürün yoksa 404 sayfasına yönlendir
+                    window.location.href = '/404/'; 
                     return;
                 }
 
-                sepetVeFavorileriYukle(urunListesi); // Kategorik ürünleri yükle
+                sepetVeFavorileriYukle(urunListesi); 
             })
             .catch(error => {
                 console.error('Ürünler yüklenirken hata oluştu:', error);
-                window.location.href = '/404/'; // Hata durumunda 404 sayfasına yönlendir
+                window.location.href = '/404/';
             });
     }
 }
@@ -88,19 +85,19 @@ function sepetVeFavorileriYukle(urunListesi) {
         ? fetch('/api/favoriler', { credentials: 'include' })
             .then(response => response.json())
             .then(data => {
-                console.log('Favoriler:', data); // Konsola yazdır
+                console.log('Favoriler:', data); 
                 return data.success ? data.favoriler.map(fav => fav.UrunID) : [];
             })
             .catch(() => [])
         : Promise.resolve([]);
 
-    Promise.all([sepetVerisi, favoriVerisi]) // Tüm veriler yüklendiğinde
+    Promise.all([sepetVerisi, favoriVerisi]) 
         .then(([sepetUrunleri, favoriUrunler]) => {
-            renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID); // Ürünleri render et
+            renderProducts(urunListesi, sepetUrunleri, favoriUrunler, kullaniciID);
         })
         .catch(error => {
             console.error('Sepet ve favoriler yüklenirken hata oluştu:', error);
-            renderProducts(urunListesi, [], [], null); // Hata durumunda boş verilerle render et
+            renderProducts(urunListesi, [], [], null);
         });
 }
 

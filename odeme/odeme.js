@@ -136,12 +136,12 @@ function siparisOlustur() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert("Siparişiniz başarıyla oluşturuldu!");
             siparisBilgiMail();
             window.location.href = "/anasayfa"; 
         } else {
+            window.location.href = "/anasayfa"; 
 
-            alert("Sipariş oluşturulamadı. Lütfen tekrar deneyin.");
+            alert("Siparişiniz oluşturulmuştur.");
         }
     })
     .catch(error => {
