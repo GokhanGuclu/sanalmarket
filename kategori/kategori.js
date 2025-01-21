@@ -160,13 +160,14 @@ function toggleFavorite(urunID, element, kullaniciID) {
 }
 
 
-function toggleQuantityControls(button) {
+async function toggleQuantityControls(button) {
     const parent = button.parentElement;
     const urunID = parseInt(parent.dataset.urunId);
     const orijinalFiyat = parseFloat(parent.dataset.orijinalFiyat);
     const indirimOrani = parseFloat(parent.dataset.indirimOrani) || 0;
 
-    if (kullaniciID === null) {
+    // Kullanıcı oturum kontrolü (gerekirse)
+    if (kullaniciID === null) { 
         showBox();
         return;
     }
@@ -182,25 +183,34 @@ function toggleQuantityControls(button) {
 
     showLoadingSpinner();
 
-    fetch('/api/sepet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            kullaniciID: kullaniciID,  
-            urunID: urunID,
-            urunSayisi: 1,
-            urunFiyat: indirimliFiyat
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
+    try {
+        const response = await fetch('/api/sepet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                kullaniciID: kullaniciID,
+                urunID: urunID,
+                urunFiyat: indirimliFiyat
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
         if (data.success) {
             location.reload(); 
         } else {
-            alert('Ürün eklenirken hata oluştu.');
+            alert('Ürün eklenirken hata oluştu: ' + data.message);
         }
-    })
-    .finally(() => hideLoadingSpinner());
+    } catch (error) {
+        console.error('Sepet isteği hatası:', error);
+        alert('Ürün eklenirken hata oluştu: ' + error.message);
+    } finally {
+        hideLoadingSpinner();
+    }
 }
 
 function showBox() {

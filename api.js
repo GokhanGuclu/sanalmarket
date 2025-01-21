@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { runQuery, checkUser, addUser } = require('./sql');
 const multer = require('multer');
+const nodemailer = require("nodemailer");
 
 // ------------------ // GİRİŞ KAYIT APİSİ // ------------------ //
 router.post('/login', async (req, res) => {
@@ -344,21 +345,26 @@ router.get('/sepet', async (req, res) => {
 
 // ------------------ // SEPETE VERİ GÖNDERME APİSİ // ------------------ //
 router.post('/sepet', async (req, res) => {
-    let { kullaniciID, urunID, urunSayisi } = req.body;
+    let { kullaniciID, urunID, urunFiyat } = req.body;
 
     try {
         if (!kullaniciID) {
             kullaniciID = req.session.userID;
         }
 
-        const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ?;`;
+        // Oturum kontrolü (isteğe bağlı)
+        if (!kullaniciID) {
+            return res.status(401).json({ success: false, message: 'Kullanıcı oturum açmamış.' });
+        }
+
+        const findCartQuery = `SELECT SepetID FROM Sepet WHERE KullaniciID = ? AND SepetAktif = 1;`;
         let [sepet] = await runQuery(findCartQuery, [kullaniciID]);
 
         let sepetID;
         if (!sepet) {
             const createCartQuery = `
-                INSERT INTO Sepet (KullaniciID, SepetFiyat)
-                VALUES (?, 0.00);
+                INSERT INTO Sepet (KullaniciID, SepetFiyat, SepetAktif)
+                VALUES (?, 0.00, 1);
             `;
             const result = await runQuery(createCartQuery, [kullaniciID]);
             sepetID = result.insertId;
@@ -380,29 +386,49 @@ router.post('/sepet', async (req, res) => {
         const [urun] = await runQuery(getProductQuery, [urunID]);
 
         if (!urun) {
-            return res.status(400).json({ success: false, message: 'Geçersiz ürün ID.' });
+            return res.status(404).json({ success: false, message: 'Ürün bulunamadı.' }); 
         }
 
+        // İndirim hesaplaması (isteğe bağlı) - İstemci tarafında hesaplanıyorsa bu kısmı kaldırabilirsiniz
         let orijinalFiyat = parseFloat(urun.UrunFiyat);
         let indirimliFiyat = urun.IndirimOrani > 0
             ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
             : orijinalFiyat;
 
-        const toplamFiyat = (indirimliFiyat * urunSayisi).toFixed(2);
+        // Toplam fiyat hesaplaması (isteğe bağlı) - İstemci tarafında hesaplanıyorsa bu kısmı kaldırabilirsiniz
+        const toplamFiyat = (indirimliFiyat * 1).toFixed(2); // urunSayisi 1 olarak sabitlendi
 
-        const addOrUpdateProductQuery = `
-            INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat)
-            VALUES (?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-            UrunSayisi = UrunSayisi + VALUES(UrunSayisi),
-            UrunFiyat = UrunFiyat + VALUES(UrunFiyat);
+        // SepetUrunleri tablosunda ilgili kaydı kontrol et
+        const checkProductQuery = `
+            SELECT UrunSayisi, UrunFiyat 
+            FROM SepetUrunleri 
+            WHERE SepetID = ? AND UrunID = ?
         `;
-        await runQuery(addOrUpdateProductQuery, [sepetID, urunID, urunSayisi, toplamFiyat]);
+        const [existingProduct] = await runQuery(checkProductQuery, [sepetID, urunID]);
 
+        if (existingProduct) {
+            // Ürün zaten sepette varsa, UrunSayisi ve UrunFiyat'ı güncelle
+            const updateProductQuery = `
+                UPDATE SepetUrunleri 
+                SET UrunSayisi = UrunSayisi + 1, 
+                    UrunFiyat = UrunFiyat + ? 
+                WHERE SepetID = ? AND UrunID = ?
+            `;
+            await runQuery(updateProductQuery, [urunFiyat, sepetID, urunID]);
+        } else {
+            // Ürün sepette yoksa, yeni bir kayıt ekle
+            const insertProductQuery = `
+                INSERT INTO SepetUrunleri (SepetID, UrunID, UrunSayisi, UrunFiyat) 
+                VALUES (?, ?, 1, ?)
+            `;
+            await runQuery(insertProductQuery, [sepetID, urunID, urunFiyat]);
+        }
+
+        // Sepet fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
-                SELECT COALESCE(SUM(UrunFiyat), 0)
+                SELECT SUM(UrunFiyat)
                 FROM SepetUrunleri
                 WHERE SepetID = ?
             )
@@ -411,12 +437,18 @@ router.post('/sepet', async (req, res) => {
         await runQuery(updateCartPriceQuery, [sepetID, sepetID]);
 
         res.json({ success: true, message: 'Ürün sepete güncellendi.', sepetID });
+
     } catch (error) {
         console.error('Sepet güncellenirken hata oluştu:', error.message);
+
+        // Daha detaylı hata yönetimi (isteğe bağlı)
+        if (error.code === 'ER_DUP_ENTRY') { // Örnek hata kodu
+            return res.status(400).json({ success: false, message: 'Ürün zaten sepette.' });
+        } 
+
         res.status(500).json({ success: false, message: 'Sepete ekleme veya güncelleme başarısız.' });
     }
 });
-
 
 // ------------------ // SEPETTEKİ ÜRÜNÜ SİLME APİSİ // ------------------ //
 router.delete('/sepet/:urunID', async (req, res) => {
@@ -487,24 +519,27 @@ router.put('/sepet/:urunID', async (req, res) => {
         }
 
         let yeniMiktar = urun.UrunSayisi + delta;
-        if (yeniMiktar < 1) {
-            return res.status(400).json({ success: false, message: 'Miktar geçersiz.' });
+        if (yeniMiktar <= 0) {
+            // Ürünü sepetten kaldır
+            const deleteQuery = `DELETE FROM SepetUrunleri WHERE UrunID = ? AND SepetID = ?;`;
+            await runQuery(deleteQuery, [urunID, sepetID]);
+        } else {
+            const orijinalFiyat = parseFloat(urun.UrunFiyat);
+            let indirimliFiyat = urun.IndirimOrani > 0
+                ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
+                : orijinalFiyat;
+
+            const toplamFiyat = (indirimliFiyat * yeniMiktar).toFixed(2);
+
+            const updateQuery = `
+                UPDATE SepetUrunleri
+                SET UrunSayisi = ?, UrunFiyat = ?
+                WHERE UrunID = ? AND SepetID = ?;
+            `;
+            await runQuery(updateQuery, [yeniMiktar, toplamFiyat, urunID, sepetID]);
         }
 
-        const orijinalFiyat = parseFloat(urun.UrunFiyat);
-        let indirimliFiyat = urun.IndirimOrani > 0
-            ? orijinalFiyat * (1 - urun.IndirimOrani / 100)
-            : orijinalFiyat;
-
-        const toplamFiyat = (indirimliFiyat * yeniMiktar).toFixed(2);
-
-        const updateQuery = `
-            UPDATE SepetUrunleri
-            SET UrunSayisi = ?, UrunFiyat = ?
-            WHERE UrunID = ? AND SepetID = ?;
-        `;
-        await runQuery(updateQuery, [yeniMiktar, toplamFiyat, urunID, sepetID]);
-
+        // Sepet toplam fiyatını güncelle
         const updateCartPriceQuery = `
             UPDATE Sepet
             SET SepetFiyat = (
@@ -522,6 +557,7 @@ router.put('/sepet/:urunID', async (req, res) => {
         res.status(500).json({ success: false, message: 'Sepet güncellenemedi.' });
     }
 });
+
 
 // ------------------ // SEPETE ÜRÜN EKLEME APİSİ // ------------------ //
 router.post('/sepet/ekle/:urunID', async (req, res) => {
@@ -767,6 +803,135 @@ router.delete('/kartlar/:kartID', async (req, res) => {
     }
 });
 
+router.get('/siparisler-cek', async (req, res) => {
+    const kullaniciID = req.session.userID;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            SELECT SiparisID, SepetID, ToplamFiyat AS ToplamTutar, Tarih AS SiparisTarihi
+            FROM siparis
+            WHERE SepetID IN (
+                SELECT SepetID
+                FROM sepet
+                WHERE KullaniciID = ?
+            )
+            ORDER BY Tarih DESC;
+        `;
+        const siparisler = await runQuery(query, [kullaniciID]);
+
+        if (siparisler.length > 0) {
+            res.json({ success: true, siparisler });
+        } else {
+            res.json({ success: true, siparisler: [] });
+        }
+    } catch (error) {
+        console.error('Siparişler alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Siparişler alınamadı.' });
+    }
+});
+
+router.get('/siparisler-cek/detay/:siparisID', async (req, res) => {
+    const kullaniciID = req.session.userID;
+    const siparisID = req.params.siparisID;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        // Siparişin kullanıcının sepetine ait olup olmadığını kontrol et
+        const kontrolQuery = `
+            SELECT s.SiparisID
+            FROM siparis AS s
+            JOIN sepet AS sp ON s.SepetID = sp.SepetID
+            WHERE s.SiparisID = ? AND sp.KullaniciID = ?;
+        `;
+        const kontrolSonucu = await runQuery(kontrolQuery, [siparisID, kullaniciID]);
+
+        if (kontrolSonucu.length === 0) {
+            return res.status(403).json({ success: false, message: 'Bu sipariş size ait değil.' });
+        }
+
+        // Siparişe ait ürünleri çek
+        const urunQuery = `
+            SELECT su.UrunID, su.UrunSayisi AS Adet, su.UrunFiyat AS Fiyat, u.UrunAdi
+            FROM sepeturunleri AS su
+            JOIN urunler AS u ON su.UrunID = u.UrunID
+            WHERE su.SepetID = (
+                SELECT SepetID
+                FROM siparis
+                WHERE SiparisID = ?
+            );
+        `;
+        const urunler = await runQuery(urunQuery, [siparisID]);
+
+        if (urunler.length > 0) {
+            res.json({ success: true, urunler });
+        } else {
+            res.json({ success: false, message: 'Siparişe ait ürün bulunamadı.' });
+        }
+    } catch (error) {
+        console.error('Sipariş detayları alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Sipariş detayları alınamadı.' });
+    }
+});
+
+
+
+router.post('/siparis-olustur', async (req, res) => {
+    const kullaniciId = req.session.userID;
+  
+    try {
+      const sepetQuery = `
+        SELECT SepetID 
+        FROM sepet 
+        WHERE KullaniciID = ? AND SepetAktif = 1
+      `;
+      const sepetResult = await runQuery(sepetQuery, [kullaniciId]);
+  
+      if (sepetResult.length === 0) {
+        return res.status(400).json({ success: false, message: 'Aktif sepet bulunamadı.' });
+      }
+  
+      const sepetId = sepetResult[0].SepetID;
+  
+      const siparisQuery = `
+        INSERT INTO siparis (SepetID, ToplamFiyat, Durum, Tarih, Adres) 
+        VALUES (?, (SELECT SepetFiyat FROM sepet WHERE SepetID = ?), 'Hazırlanıyor', NOW(), 
+        (
+          SELECT CONCAT(AdresAciklama, ', ', Ilce, '/', Sehir) 
+          FROM adres
+          INNER JOIN kullanici ON adres.KullaniciID = kullanici.KullaniciID
+          WHERE kullanici.KullaniciID = ? AND adres.SecilenAdres = 1
+        ))
+      `;
+      await runQuery(siparisQuery, [sepetId, sepetId, kullaniciId]);
+  
+      const updateSepetQuery = `
+        UPDATE sepet 
+        SET SepetAktif = 0 
+        WHERE SepetID = ?
+      `;
+      await runQuery(updateSepetQuery, [sepetId]);
+      
+      const newSepetQuery = `
+        INSERT INTO sepet (KullaniciID, SepetFiyat, SepetAktif)
+        VALUES (?, 0.00, true)
+      `;
+
+      await runQuery(newSepetQuery, [kullaniciId]);
+
+      return res.json({ success: true, message: 'Sipariş başarıyla oluşturuldu.' });
+    } catch (error) {
+      console.error('Sipariş oluşturma hatası:', error.message);
+      res.status(500).json({ success: false, message: 'Sipariş oluşturulamadı.' });
+    }
+  });
+
 // ------------------ // KURYE KISMI // ------------------ //
 
 router.get('/siparisler', async (req, res) => {
@@ -774,17 +939,16 @@ router.get('/siparisler', async (req, res) => {
         const query = `
             SELECT 
                 siparis.SiparisID AS id,
-                siparis.UrunAd AS urun,
                 siparis.Tarih AS tarih,
                 siparis.Durum AS durum,
                 siparis.TeslimatKodu AS teslimatKodu,
                 kullanici.Ad AS ad,
                 kullanici.Soyad AS soyad,
-                adres.Sehir AS sehir,
-                adres.Ilce AS ilce
+                kullanici.Mail AS mail,
+                siparis.Adres AS adres 
             FROM siparis
-            INNER JOIN kullanici ON siparis.MusteriID = kullanici.KullaniciID
-            LEFT JOIN adres ON siparis.MusteriID = adres.KullaniciID;
+            INNER JOIN sepet ON siparis.SepetID = sepet.SepetID
+            INNER JOIN kullanici ON sepet.KullaniciID = kullanici.KullaniciID;
         `;
 
         const results = await runQuery(query);
@@ -803,6 +967,56 @@ router.get('/siparisler', async (req, res) => {
 
 const generateRandomCode = () => Math.floor(10000 + Math.random() * 90000).toString();
 
+async function dogrulamaKoduMail(alicimail, kod) {
+    let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.MAIL, 
+            pass: "eswh vwws arjt tsgk"   
+        }
+    });
+
+    let mailOptions = {
+        from: process.env.MAIL,
+        to: alicimail,
+        subject: "Market alışverişiniz için teslimat kodu!",
+        text: `Kapınıza gelecek olan kuryeye ${kod}'u söyleyerek siparişinizi teslim alabilirsiniz.` 
+    };
+
+    try {
+        let info = await transporter.sendMail(mailOptions);
+        console.log("E-posta gönderildi: %s", info.messageId);
+    } catch (error) {
+        console.error("E-posta gönderilemedi:", error);
+        // Hata yönetimi ekleyin (örneğin, kullanıcıya bir hata mesajı döndürme)
+    }
+}
+
+async function siparisBilgilendirmeMail(alicimail, konu, mesaj) {
+    let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.MAIL, 
+            pass: "eswh vwws arjt tsgk"   
+        }
+    });
+
+    let mailOptions = {
+        from: process.env.MAIL,
+        to: alicimail,
+        subject: konu,
+        text: mesaj
+    };
+
+    try {
+        let info = await transporter.sendMail(mailOptions);
+        console.log("E-posta gönderildi: %s", info.messageId);
+    } catch (error) {
+        console.error("E-posta gönderilemedi:", error);
+        // Hata yönetimi ekleyin (örneğin, kullanıcıya bir hata mesajı döndürme)
+    }
+}
+
 router.post('/siparis/guncelle', async (req, res) => {
     const { siparisId, teslimatKodu, action, varisSuresi } = req.body;
 
@@ -819,6 +1033,23 @@ router.post('/siparis/guncelle', async (req, res) => {
                 SET Durum = 'Yolda', TeslimatKodu = ?, varissuresi = ? 
                 WHERE SiparisID = ?
             `;
+
+            const getmailQuery = `
+                SELECT kullanici.Mail 
+                FROM kullanici
+                INNER JOIN sepet ON kullanici.KullaniciID = sepet.KullaniciID
+                INNER JOIN siparis ON sepet.SepetID = siparis.SepetID
+                WHERE siparis.SiparisID = ?
+            `;
+            const mailResult = await runQuery(getmailQuery, [siparisId]);
+
+            if (mailResult.length > 0) {
+                const alicimail = mailResult[0].Mail;
+                await dogrulamaKoduMail(alicimail, randomCode);
+            } else {
+                console.error('Kullanıcı e-postası bulunamadı.');
+            }
+
             await runQuery(updateQuery, [randomCode, varisSuresi, siparisId]);
 
             return res.json({
@@ -826,6 +1057,7 @@ router.post('/siparis/guncelle', async (req, res) => {
                 message: 'Sipariş "Yolda" olarak güncellendi ve teslimat kodu gönderildi.',
                 teslimatKodu: randomCode,
             });
+
         } else if (action === 'teslimEt') {
             if (!teslimatKodu) {
                 return res.status(400).json({ success: false, message: 'Teslimat kodu girilmelidir.' });
@@ -848,6 +1080,23 @@ router.post('/siparis/guncelle', async (req, res) => {
                 SET Durum = 'Teslim Edildi', TeslimatKodu = NULL, Tarih = ? 
                 WHERE SiparisID = ?
             `;
+
+            const getmailQuery = `
+                SELECT kullanici.Mail 
+                FROM kullanici
+                INNER JOIN sepet ON kullanici.KullaniciID = sepet.KullaniciID
+                INNER JOIN siparis ON sepet.SepetID = siparis.SepetID
+                WHERE siparis.SiparisID = ?
+            `;
+            
+            const mailResult = await runQuery(getmailQuery, [siparisId]);
+
+            if (mailResult.length > 0) {
+                const alicimail = mailResult[0].Mail;
+                await siparisBilgilendirmeMail(alicimail, "Siparişiniz Teslim Edildi!", "Siparişiniz başarıyla teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz!");
+            } else {
+                console.error('Kullanıcı e-postası bulunamadı.');
+            }
             await runQuery(updateQuery, [teslimTarihi, siparisId]);
 
             return res.json({
@@ -864,24 +1113,21 @@ router.post('/siparis/guncelle', async (req, res) => {
     }
 });
 
-// Dosya depolama ayarları
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'resimler/'); // Görsellerin kaydedileceği klasör
+        cb(null, 'resimler/');
     },
     filename: function (req, file, cb) {
-        const uniqueFilename = uuidv4() + path.extname(file.originalname); // Benzersiz dosya adı
+        const uniqueFilename = uuidv4() + path.extname(file.originalname);
         cb(null, uniqueFilename);
     }
 });
 
-// Yükleme ayarları
 const { v4: uuidv4 } = require('uuid');
 
-// --- Görseller için Yükleme Middleware'i --- //
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Maksimum dosya boyutu: 5MB
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const fileTypes = /jpeg|jpg|png|gif/;
         const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
@@ -895,26 +1141,24 @@ const upload = multer({
     }
 });
 
-// --- Ürün Görseli Yükleme API'si --- //
 router.post('/urun/gorsel', upload.single('urunGorsel'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: 'Dosya yüklenemedi.' });
     }
 
-    const gorselYolu = `/resimler/${req.file.filename}`; // Resim dosyasının kaydedildiği yol
+    const gorselYolu = `/resimler/${req.file.filename}`;
     res.json({ success: true, gorselYolu });
 });
 
 router.post('/urun', upload.single('Gorsel'), async (req, res) => {
     try {
         const { UrunAdi, UrunFiyat, Aciklama, Kategori, Stok } = req.body;
-        const Gorsel = req.file ? req.file.filename : null; // Yüklenen dosya adı
+        const Gorsel = req.file ? req.file.filename : null; 
 
         if (!Gorsel) {
             return res.status(400).json({ message: 'Görsel yüklenemedi.' });
         }
 
-        // Veritabanına kaydetme işlemi
         const query = `
             INSERT INTO urun (UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel)
             VALUES (?, ?, ?, ?, ?, ?);
@@ -938,7 +1182,6 @@ router.get('/urun', async (req, res) => {
 
         const urunler = await runQuery(query);
 
-        // Görsellerin tam URL'sini oluştur
         const urunlerWithImages = urunler.map(urun => ({
             ...urun,
             Gorsel: urun.Gorsel ? `/resimler/${urun.Gorsel}` : null
@@ -955,7 +1198,6 @@ router.put('/urun/stok-guncelle', async (req, res) => {
     const { UrunAdi, yeniStok } = req.body;
 
     try {
-        // 1. Gelişmiş Veri Doğrulama
         if (yeniStok < 0) {
             return res.status(400).json({ message: 'Stok değeri negatif olamaz.' });
         }
@@ -963,7 +1205,6 @@ router.put('/urun/stok-guncelle', async (req, res) => {
             return res.status(400).json({ message: 'Geçerli bir ürün adı girmelisiniz.' });
         }
 
-        // 2. Parametreli Sorgu (SQL Injection Koruması)
         const query = `
             UPDATE urun
             SET Stok = ?
@@ -972,9 +1213,8 @@ router.put('/urun/stok-guncelle', async (req, res) => {
 
         const result = await runQuery(query, [yeniStok, UrunAdi]);
 
-        // 3. Detaylı Hata Ayıklama
         if (result.affectedRows === 0) {
-            console.error('Ürün bulunamadı:', UrunAdi); // Hangi ürünün bulunamadığını logla
+            console.error('Ürün bulunamadı:', UrunAdi);
             return res.status(404).json({ message: 'Ürün bulunamadı.' });
         }
 
@@ -983,7 +1223,7 @@ router.put('/urun/stok-guncelle', async (req, res) => {
         console.error('Stok güncelleme hatası:', error);
         res.status(500).json({
             message: 'Stok güncelleme başarısız oldu.',
-            error: error.message // Hata mesajını istemciye gönder (geliştirme ortamında)
+            error: error.message 
         });
     }
 });
@@ -1004,13 +1244,13 @@ router.get('/kampanya', async (req, res) => {
             LEFT JOIN urun u ON i.UrunID = u.UrunID;
         `;
         const kampanyalar = await runQuery(query);
-        console.log(kampanyalar); // Kampanyalar verisini kontrol et
+        console.log(kampanyalar);
 
         if (!kampanyalar || kampanyalar.length === 0) {
             return res.status(404).json({ message: 'Aktif kampanya bulunamadı.' });
         }
 
-        res.json({ kampanyalar }); // Kampanyaları JSON formatında döndür
+        res.json({ kampanyalar }); 
     } catch (error) {
         console.error('Kampanyalar alınamadı:', error);
         res.status(500).json({ message: 'Kampanya verileri alınamadı.', error: error.message });
@@ -1018,13 +1258,11 @@ router.get('/kampanya', async (req, res) => {
 });
 
 
-// kampanya ekleme 
 
 router.post('/kampanya-ekle', async (req, res) => {
     const { kampanyaAdi, indirimOrani, kategori, urunler } = req.body;
 
     try {
-        // Kategori kontrolü
         if (kategori) {
             const query = `
                 INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
@@ -1035,7 +1273,6 @@ router.post('/kampanya-ekle', async (req, res) => {
             await runQuery(query, [indirimOrani, kampanyaAdi, kategori]);
         }
 
-        // Ürün listesi kontrolü
         if (urunler && urunler.length > 0) {
             for (const urunAdi of urunler) {
                 const urunKontrol = await runQuery('SELECT UrunID FROM urun WHERE UrunAdi = ?', [urunAdi]);
@@ -1044,7 +1281,6 @@ router.post('/kampanya-ekle', async (req, res) => {
                 }
             }
 
-            // Kampanya ekleme
             const query = `
                 INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
                 SELECT UrunID, ?, ?
@@ -1062,19 +1298,17 @@ router.post('/kampanya-ekle', async (req, res) => {
 });
 
 
-// Kampanya ürünqleri listeleme
 router.get('/kampanya-urun', async (req, res) => {
     try {
         const query = 'SELECT UrunAdi, UrunID FROM urun';
         const urunler = await runQuery(query);
-        res.json({ urunler }); // Ürünleri JSON formatında döndür
+        res.json({ urunler }); 
     } catch (error) {
         console.error('Ürünler alınamadı:', error);
         res.status(500).json({ message: 'Ürün verileri alınamadı.', error: error.message });
     }
 });
 
-// Siparişleri listeleme
 router.get('/siparis', async (req, res) => {
     try {
         const query = `
@@ -1102,7 +1336,6 @@ router.get('/siparis', async (req, res) => {
 
 
 
-// Müşteri puanlarını listeleme
 router.get('/musteripuanlari', async (req, res) => {
     try {
         const query = `

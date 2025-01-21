@@ -11,15 +11,14 @@ function toggleNewCardForm() {
     const newCardForm = document.getElementById('new-card-form');
     newCardForm.classList.toggle('hidden');
 }
-// Adres Bilgilerini Çekme
+
 function fetchAddress() {
     fetch('/api/adresler', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
-            console.log('Adres API Yanıtı:', data); // Konsolda kontrol et
-
+            console.log('Adres API Yanıtı:', data);
             if (data.success && data.adresler.length > 0) {
-                const adres = data.adresler[0]; // En üstteki seçili adres
+                const adres = data.adresler[0]; 
 
                 const addressInfo = document.querySelector('.address-info');
                 addressInfo.innerHTML = `
@@ -34,18 +33,16 @@ function fetchAddress() {
         .catch(error => console.error('Adres yüklenirken hata oluştu:', error));
 }
 
-// Kart Bilgilerini Çekme
 function fetchCards() {
     fetch('/api/kartlar', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
-            console.log('Kart API Yanıtı:', data); // Konsolda kontrol et
+            console.log('Kart API Yanıtı:', data);
 
             const cardSelect = document.getElementById('saved-cards');
-            cardSelect.innerHTML = ''; // Önce dropdown temizlenir
+            cardSelect.innerHTML = '';
 
             if (data.success && data.kartlar.length > 0) {
-                // Kartları dropdown içine ekle
                 data.kartlar.forEach(kart => {
                     const option = document.createElement('option');
                     option.value = kart.KartID;
@@ -63,12 +60,10 @@ function fetchCards() {
         .catch(error => console.error('Kartlar yüklenirken hata oluştu:', error));
 }
 
-// Kart Numarasını Maskeleme
 function maskCardNumber(numara) {
-    return '**** **** **** ' + numara.slice(-4); // Son 4 haneyi gösterir
+    return '**** **** **** ' + numara.slice(-4); 
 }
 
-// Yeni Kart Ekleme
 function addNewCard() {
     const name = document.querySelector('#new-card-form input[placeholder="Kart Üzerindeki İsim"]').value;
     const number = document.querySelector('#new-card-form input[placeholder="Kart Numarası"]').value;
@@ -92,7 +87,7 @@ function addNewCard() {
         .then(data => {
             if (data.success) {
                 alert('Kart başarıyla eklendi!');
-                fetchCards(); // Kartları yeniden yükle
+                fetchCards();
             } else {
                 alert('Kart eklenirken bir hata oluştu!');
             }
@@ -101,47 +96,72 @@ function addNewCard() {
 }
 
 function sepetOzetiniGuncelle() {
-    // Sepet bilgilerini API'den al
     fetch('/api/sepet', { credentials: 'include' })
-        .then(response => response.json())  // Yanıtı JSON formatında al
+        .then(response => response.json())  
         .then(data => {
-            // Sepet özetini gösterecek olan span'ları seç
             const toplamTutarSpan = document.getElementById('toplam-tutar');
             const teslimatTutariSpan = document.getElementById('teslimat-tutari');
             const odenecekTutarSpan = document.getElementById('odenecek-tutar');
             
-            // Sepet boş mu kontrol et
             if (data.success && data.sepetUrunleri && data.sepetUrunleri.length > 0) {
                 const sepetUrunleri = data.sepetUrunleri;
                 
-                // Sepet fiyatlarını hesapla
                 const sepetFiyat = sepetUrunleri.reduce((total, urun) => total + urun.SepetFiyat, 0);
                 
-                // Teslimat tutarı, burada sabit bir değer kullanıyoruz
                 const teslimatTutari = 34.99;
                 
-                // Ödenecek toplam tutarı hesapla
                 const odenecekTutar = sepetFiyat + teslimatTutari;
 
-                // Sepet özetini HTML olarak güncelle
-                toplamTutarSpan.innerText = sepetFiyat.toFixed(2);  // Toplam tutarı güncelle
-                teslimatTutariSpan.innerText = teslimatTutari.toFixed(2);  // Teslimat tutarını güncelle
-                odenecekTutarSpan.innerText = odenecekTutar.toFixed(2);  // Ödenecek tutarı güncelle
+                toplamTutarSpan.innerText = sepetFiyat.toFixed(2);
+                teslimatTutariSpan.innerText = teslimatTutari.toFixed(2);
+                odenecekTutarSpan.innerText = odenecekTutar.toFixed(2);
             } else {
-                // Sepet boşsa, boş sepet mesajı göster
                 toplamTutarSpan.innerText = '0.00';
-                teslimatTutariSpan.innerText = '34.99';  // Sabit teslimat tutarı
-                odenecekTutarSpan.innerText = '34.99';  // Sabit ödenecek tutar
+                teslimatTutariSpan.innerText = '34.99';
+                odenecekTutarSpan.innerText = '34.99'; 
             }
         })
         .catch(error => {
-            // Eğer bir hata oluşursa konsola yazdır
             console.error('Sepet bilgileri alınırken hata oluştu:', error);
         });
 }
 
+
+function siparisOlustur() {
+
+    fetch('/api/siparis-olustur', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Siparişiniz başarıyla oluşturuldu!");
+            siparisBilgiMail();
+            window.location.href = "/anasayfa"; 
+        } else {
+
+            alert("Sipariş oluşturulamadı. Lütfen tekrar deneyin.");
+        }
+    })
+    .catch(error => {
+        console.error('Sipariş oluşturma hatası:', error);
+        alert("Sipariş oluşturulamadı. Lütfen tekrar deneyin.");
+    });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    fetchAddress(); // Adresi çek
-    fetchCards();   // Kartları çek
+    fetchAddress();
+    fetchCards();   
     sepetOzetiniGuncelle();
+
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    checkoutBtn.addEventListener('click', () => {
+        const odemeYontemi = document.querySelector('input[name="payment"]:checked').value;
+        if (odemeYontemi) {
+            siparisOlustur();
+        } else {
+            alert("Lütfen bir ödeme yöntemi seçin.");
+        }
+    });
 });

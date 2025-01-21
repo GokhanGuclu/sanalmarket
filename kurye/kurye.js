@@ -105,8 +105,7 @@ function displayActiveOrders(orders) {
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${order.ad} ${order.soyad}</td>
-            <td>${order.urun || 'Bilinmiyor'}</td>
-            <td>${order.sehir ? `${order.sehir}, ${order.ilce}` : 'Adres Yok'}</td>
+            <td>${order.adres}</td>
             <td>${order.durum}</td>
             <td>${actionButton}</td>
         `;
@@ -122,8 +121,7 @@ function showOrderDetails(orderId) {
                 showModal({
                     title: 'Sipariş Detayları',
                     message: 'Lütfen varış süresini girin ve teslim alın.',
-                    address: `${order.sehir}, ${order.ilce}`,
-                    products: [order.urun],
+                    address: `${order.adres}`,
                     showInput: true,
                     showDetails: true,
                     confirmText: 'Teslim Al',
@@ -140,8 +138,7 @@ function showOrderDetails(orderId) {
                 const modalDetails = document.getElementById('modal-details');
                 modalDetails.innerHTML = `
                     <p><strong>Sipariş Numarası:</strong> ${order.id}</p>
-                    <p><strong>Ürün:</strong> ${order.urun}</p>
-                    <p><strong>Adres:</strong> ${order.sehir}, ${order.ilce}</p>
+                    <p><strong>Adres:</strong> ${order.adres}</p>
                     <p><strong>Durum:</strong> ${order.durum}</p>
                 `;
             } else {
@@ -231,7 +228,7 @@ function displayPastOrders(orders) {
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${order.ad} ${order.soyad}</td>
-            <td>${order.sehir ? `${order.sehir}, ${order.ilce}` : 'Adres Yok'}</td>
+            <td>${order.adres}</td>
             <td>${order.durum}</td>
             <td>${new Date(order.tarih).toLocaleString()}</td>
         `;

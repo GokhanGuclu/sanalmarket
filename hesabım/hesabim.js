@@ -34,7 +34,10 @@ function loadPage(page) {
                 adresleriYukle();
             } else if (page == 'kartlarim') {
                 kartlariYukle();
+            } else if (page == 'siparisler') {
+                siparisleriYukle();
             }
+            
         })
         .catch(error => console.error(`${page}.html yüklenirken hata oluştu:`, error));
 }
@@ -390,6 +393,70 @@ function kartSil(kartID) {
             alert('Sunucu hatası! Lütfen tekrar deneyin.');
         });
 }
+
+
+// -------------------- //
+// SİPARİŞLER KODLARI   //
+// -------------------- //
+
+function siparisleriYukle() {
+    const siparisListesi = document.getElementById('siparis-listesi');
+
+    fetch('/api/siparisler-cek', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.siparisler.length > 0) {
+                siparisListesi.innerHTML = ''; 
+
+                data.siparisler.forEach(siparis => {
+                    const siparisHTML = `
+                        <div class="siparis-item">
+                            <div class="siparis-detay">
+                                <p><strong>Sipariş Numarası:</strong> ${siparis.SiparisNo}</p>
+                                <p><strong>Sipariş Tarihi:</strong> ${formatTarih(siparis.SiparisTarihi)}</p>
+                                <p><strong>Toplam Tutar:</strong> ${siparis.ToplamTutar} TL</p>
+                            </div>
+                            <button class="detay-btn" onclick="siparisDetayGoster(${siparis.SiparisID})">Detay</button>
+                        </div>
+                    `;
+                    siparisListesi.innerHTML += siparisHTML;
+                });
+            } else {
+                siparisListesi.innerHTML = '<p>Henüz siparişiniz bulunmamaktadır.</p>';
+            }
+        })
+        .catch(error => console.error('Siparişler yüklenirken hata oluştu:', error));
+}
+
+function siparisDetayGoster(siparisID) {
+    fetch(`/api/siparisler-cek/detay/${siparisID}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = document.getElementById('siparisModal');
+                const urunListesi = document.getElementById('urunListesi');
+                urunListesi.innerHTML = ''; 
+
+                data.urunler.forEach(urun => {
+                    urunListesi.innerHTML += `
+                        <li>${urun.UrunAdi} - ${urun.Adet} Adet - ${urun.Fiyat} TL</li>
+                    `;
+                });
+
+                modal.style.display = 'flex';
+            } else {
+                alert('Sipariş detayları alınamadı.');
+            }
+        })
+        .catch(error => console.error('Sipariş detayları yüklenirken hata oluştu:', error));
+}
+
+function modalKapat() {
+    const modal = document.getElementById('siparisModal');
+    modal.style.display = 'none';
+}
+
+
 // -------------------- //
 // TARİH FORMATLAMA     //
 // -------------------- //

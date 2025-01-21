@@ -5,15 +5,15 @@ async function dogrulamaKoduMail(alicimail, kod) {
         service: "gmail",
         auth: {
             user: process.env.MAIL, 
-            pass: "peka aytt ocsx yjcm"   
+            pass: "eswh vwws arjt tsgk"   
         }
     });
 
     let mailOptions = {
         from: process.env.MAIL,
         to: alicimail,
-        subject: "Test Mailidir bu allah",
-        text: "bilmem ne doğrulama kodunuz @1231231dır"
+        subject: "Market alışverişiniz için teslimat kodu!",
+        text: "Kapınıza gelecek olan kuryeye " + kod + "'u söyleyerek siparişinizi teslim alabilirsiniz." 
     };
 
     try {
@@ -24,4 +24,3 @@ async function dogrulamaKoduMail(alicimail, kod) {
     }
 }
 
-dogrulamaKoduMail();
