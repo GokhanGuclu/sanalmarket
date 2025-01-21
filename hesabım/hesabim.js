@@ -36,6 +36,8 @@ function loadPage(page) {
                 kartlariYukle();
             } else if (page == 'siparisler') {
                 siparisleriYukle();
+            } else if (page == 'puanlarım') {
+                puanlariYukle()
             }
             
         })
@@ -412,7 +414,7 @@ function siparisleriYukle() {
                     const siparisHTML = `
                         <div class="siparis-item">
                             <div class="siparis-detay">
-                                <p><strong>Sipariş Numarası:</strong> ${siparis.SiparisNo}</p>
+                                <p><strong>Sipariş Numarası:</strong> ${siparis.SiparisID}</p>
                                 <p><strong>Sipariş Tarihi:</strong> ${formatTarih(siparis.SiparisTarihi)}</p>
                                 <p><strong>Toplam Tutar:</strong> ${siparis.ToplamTutar} TL</p>
                             </div>
@@ -456,6 +458,49 @@ function modalKapat() {
     modal.style.display = 'none';
 }
 
+// -------------------- //
+// PUANLARIM KODLARI   //
+// -------------------- //
+
+function puanlariYukle() {
+    fetch('/api/siparis-puanlari')
+        .then(response => response.json())
+        .then(data => {
+            const puanlarListesi = document.getElementById('puanlar-listesi');
+            if (data.success) {
+                data.puanlar.forEach(puan => {
+                    const puanDiv = document.createElement('div');
+                    puanDiv.classList.add('puan-item');
+                    puanDiv.innerHTML = `
+                        <p>Sipariş ID: ${puan.SiparisID}</p>
+                        <p>Sipariş Tarihi: ${formatPuanTarih(puan.SiparisTarihi)}</p>
+                        <div class="yildizlar" id="puan-${puan.SiparisID}">
+                            ${createStars(puan.Puan)}
+                        </div>
+                        <p>Yorum: ${puan.Yorum || 'Yorum yapılmamış.'}</p>
+                    `;
+                    puanlarListesi.appendChild(puanDiv);
+                });
+            } else {
+                puanlarListesi.innerHTML = '<p>Henüz puan vermediniz.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Puanlar yüklenirken hata oluştu:', error);
+        });
+}
+
+function createStars(puan) {
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= puan) {
+            starsHtml += `<div class="yildiz dolu"></div>`; // Dolu yıldız
+        } else {
+            starsHtml += `<div class="yildiz"></div>`; // Boş yıldız
+        }
+    }
+    return starsHtml;
+}
 
 // -------------------- //
 // TARİH FORMATLAMA     //
@@ -464,4 +509,15 @@ function modalKapat() {
 function formatTarih(tarih) {
     const date = new Date(tarih);
     return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+}
+
+function formatPuanTarih(tarih) {
+    const date = new Date(tarih);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 01-12
+    const day = String(date.getDate()).padStart(2, '0'); // 01-31
+    const hours = String(date.getHours()).padStart(2, '0'); // 00-23
+    const minutes = String(date.getMinutes()).padStart(2, '0'); // 00-59
+
+    return `${year}-${month}-${day} / ${hours}-${minutes}`;
 }

@@ -843,31 +843,30 @@ router.get('/siparisler-cek/detay/:siparisID', async (req, res) => {
     }
 
     try {
-        // Siparişin kullanıcının sepetine ait olup olmadığını kontrol et
-        const kontrolQuery = `
-            SELECT s.SiparisID
-            FROM siparis AS s
-            JOIN sepet AS sp ON s.SepetID = sp.SepetID
-            WHERE s.SiparisID = ? AND sp.KullaniciID = ?;
+        // Siparişin SepetID'sini bulalım
+        const siparisQuery = `
+            SELECT SepetID
+            FROM siparis
+            WHERE SiparisID = ? AND EXISTS (
+                SELECT 1 FROM sepet WHERE SepetID = siparis.SepetID AND KullaniciID = ?
+            );
         `;
-        const kontrolSonucu = await runQuery(kontrolQuery, [siparisID, kullaniciID]);
+        const siparis = await runQuery(siparisQuery, [siparisID, kullaniciID]);
 
-        if (kontrolSonucu.length === 0) {
+        if (siparis.length === 0) {
             return res.status(403).json({ success: false, message: 'Bu sipariş size ait değil.' });
         }
 
-        // Siparişe ait ürünleri çek
+        const sepetID = siparis[0].SepetID;
+
+        // Siparişe ait ürünleri çekelim
         const urunQuery = `
-            SELECT su.UrunID, su.UrunSayisi AS Adet, su.UrunFiyat AS Fiyat, u.UrunAdi
+            SELECT su.UrunID, su.UrunSayisi AS Adet, su.UrunFiyat AS Fiyat, u.UrunAdi, u.Aciklama, u.Gorsel
             FROM sepeturunleri AS su
-            JOIN urunler AS u ON su.UrunID = u.UrunID
-            WHERE su.SepetID = (
-                SELECT SepetID
-                FROM siparis
-                WHERE SiparisID = ?
-            );
+            JOIN urun AS u ON su.UrunID = u.UrunID
+            WHERE su.SepetID = ?;
         `;
-        const urunler = await runQuery(urunQuery, [siparisID]);
+        const urunler = await runQuery(urunQuery, [sepetID]);
 
         if (urunler.length > 0) {
             res.json({ success: true, urunler });
@@ -880,6 +879,33 @@ router.get('/siparisler-cek/detay/:siparisID', async (req, res) => {
     }
 });
 
+router.get('/siparis-puanlari', async (req, res) => {
+    const kullaniciID = req.session.userID;
+
+    if (!kullaniciID) {
+        return res.status(401).json({ success: false, message: 'Giriş yapılmamış.' });
+    }
+
+    try {
+        const query = `
+            SELECT yp.SiparisID, yp.Puan, yp.Yorum, s.Tarih AS SiparisTarihi
+            FROM yorumpuan AS yp
+            JOIN siparis AS s ON yp.SiparisID = s.SiparisID
+            WHERE yp.KullaniciID = ?
+            ORDER BY s.Tarih DESC;
+        `;
+        const puanlar = await runQuery(query, [kullaniciID]);
+
+        if (puanlar.length > 0) {
+            res.json({ success: true, puanlar });
+        } else {
+            res.json({ success: true, puanlar: [] });
+        }
+    } catch (error) {
+        console.error('Puanlar alınırken hata oluştu:', error.message);
+        res.status(500).json({ success: false, message: 'Puanlar alınamadı.' });
+    }
+});
 
 
 router.post('/siparis-olustur', async (req, res) => {

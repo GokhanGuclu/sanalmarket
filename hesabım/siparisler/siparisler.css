@@ -78,15 +78,17 @@
     color: #555;
 }
 
-.kapat-btn {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 20px;
+.modal-kapat {
+    background-color: #f44336; /* Kırmızı arka plan */
+    color: white; /* Beyaz metin */
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 16px;
     cursor: pointer;
-    color: #999;
+    margin-top: 20px;
 }
 
-.kapat-btn:hover {
-    color: #666;
+.modal-kapat:hover {
+    background-color: #e53935; /* Hover durumunda biraz daha koyu kırmızı */
 }

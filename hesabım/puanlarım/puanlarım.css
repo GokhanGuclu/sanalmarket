@@ -1,0 +1,71 @@
+/* Genel container ayarları */
+.puanlar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9; /* Yumuşak açık gri */
+    border-radius: 8px; /* Yumuşak köşeler */
+}
+
+/* Başlıklar */
+h2 {
+    font-size: 28px;
+    font-weight: bold;
+    color: #222; /* Koyu ve güçlü bir başlık rengi */
+    margin-bottom: 20px;
+    text-align: left; /* Sol hizalama */
+}
+
+/* Puanlar listesi */
+.puanlar-listesi {
+    margin-top: 30px;
+}
+
+.puan-item {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0; /* Daha açık gri */
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Hafif gölge */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.puan-item p {
+    margin: 8px 0;
+    color: #333; /* Daha koyu metin rengi */
+    font-size: 16px; /* Yazı boyutu */
+}
+
+/* Yıldızlar */
+.yildizlar {
+    display: flex;
+    gap: 5px; /* Yıldızlar arasındaki boşluk */
+}
+
+.yildiz {
+    width: 20px;
+    height: 20px;
+    background-color: #ccc; /* Boş yıldız için gri */
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); /* Yıldız şekli */
+    transition: background-color 0.3s ease;
+}
+
+.yildiz.dolu {
+    background-color: #f39c12; /* Dolu yıldız için sarı */
+}
+
+.puan-item p:first-of-type {
+    color: #3498db; /* Tarih kısmı için mavi renk */
+    font-weight: bold;
+}
+
+.puan-item p:nth-of-type(3) {
+    color: #f39c12; /* Puan kısmı için sarı renk */
+    font-weight: bold;
+}
+
+.puan-item p:last-of-type {
+    color: #2ecc71; /* Yorum kısmı için yeşil renk */
+    font-style: italic;
+}
