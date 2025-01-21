@@ -13,12 +13,14 @@
     <button class="nav-item1">
         <i class="icon1">🚚</i>
         <span>Varış Süresi: <strong>17 dk</strong></span>
-    </button>
+    </button>   
 
+    <!-- Navbar İçerisinde Arama Formu -->
     <div class="search-container1">
-        <input type="text" placeholder="Ürün arayın..." class="search-input1">
-        <button class="search-btn1">Ara</button>
+        <input type="text" class="search-input1" id="searchInput" placeholder="Ürün ara..." />
+        <button class="search-btn1" onclick="searchProducts()">Ara</button>
     </div>
+
 
     <button class="nav-item1" onclick="window.location.href='/giriskayit/';">
             <i class="icon1">👤</i>
@@ -44,4 +46,6 @@
     </div>
 
     <script src="/sepet.js"></script>
+    <script src="/kategori/kategori.js"></script>
+
 </header>

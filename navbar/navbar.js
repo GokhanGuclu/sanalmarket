@@ -12,6 +12,28 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCartFromServer().then(updateCartDropdown);
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/kullanicibilgi')
+        .then(response => response.json())
+        .then(data => {
+            const loginButton = document.querySelector('.nav-item1[onclick*="/giriskayit/"]');
+
+            if (data.success && loginButton) {
+                // Kullanıcı adı butona yazılıyor
+                const userName = data.kullanici.Ad;
+                const lastName = data.kullanici.Soyad;
+                loginButton.innerHTML = `
+                    <i class="icon1">👤</i>
+                    <span>${userName} ${lastName}</span>
+                `;
+
+                // Giriş yap yerine hesabım sayfasına yönlendirme
+                loginButton.setAttribute('onclick', "window.location.href='/hesabım';");
+            }
+        })
+        .catch(err => console.error('Kullanıcı bilgisi alınırken hata:', err));
+});
+
 
 function updateAddressDropdown(adresler) {
     const addressDropdown = document.getElementById('addressDropdown');
@@ -57,6 +79,12 @@ function updateAddressDropdown(adresler) {
 function selectAddress(adres) {
     const selectedAddress = document.getElementById('selected-address');
 
+    if (!adres || !adres.AdresID) {
+        console.error('Geçersiz adres verisi:', adres);
+        alert('Adres bilgisi eksik veya hatalı.');
+        return;
+    }
+
     const kisaBaslik = adres.AdresBaslik.length > 8 
         ? adres.AdresBaslik.slice(0, 6) + '...' 
         : adres.AdresBaslik;
@@ -67,19 +95,30 @@ function selectAddress(adres) {
         `;
     }
 
-    fetch('/api/adresler/secilen', {
+    console.log('Gönderilen adres ID:', adres.AdresID); // Kontrol için ekledik
+
+    fetch('/api/adres/secilen', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ adresID: adres.AdresID}), 
+        body: JSON.stringify({ adresID: adres.AdresID }), 
     })
-
-    .catch(err => {
-        console.error('Adres güncelleme hatası:', err);
-        alert('Sunucu hatası! Lütfen tekrar deneyin.');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Adres güncellenemedi:', data.message);
+                alert('Adres güncelleme sırasında bir hata oluştu: ' + data.message);
+            } else {
+                console.log('Adres başarıyla güncellendi:', data);
+            }
+        })
+        .catch(err => {
+            console.error('Adres güncelleme hatası:', err);
+            alert('Sunucu hatası! Lütfen tekrar deneyin.');
+        });
 }
+
 
 function updateCartDropdown() {
     const cartDropdown = document.getElementById('cartDropdown');
@@ -256,4 +295,12 @@ function toggleAddressDropdown() {
 
         dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
  
+}
+
+function searchProducts() {
+    const aramaTermi = document.getElementById('searchInput').value;
+    if (aramaTermi.trim() === '') return;
+
+    const kategoriAdi = window.location.pathname.split('/')[2]; // Kategori adını URL'den al
+    window.location.href = `/kategori/${kategoriAdi}?arama=${aramaTermi}`;
 }

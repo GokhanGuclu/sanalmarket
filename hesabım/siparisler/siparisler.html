@@ -4,22 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Siparişlerim</title>
-    <style role="stylesheet" href="siparisler.css"></style>
+    <link rel="stylesheet" href="siparisler.css">
 </head>
 <body>
     <div class="siparisler-container">
         <h2>Siparişlerim</h2>
         <div class="siparis-listesi" id="siparis-listesi">
+            <!-- Siparişler buraya yüklenecek -->
         </div>
-    
-        <div class="siparis-detay-modal" id="siparisModal">
-            <div class="modal-icerik">
-                <h3>Sipariş Detayları</h3>
-                <ul id="urunListesi">
-                </ul>
-                <button class="kapat-btn modal-kapat" onclick="modalKapat()">Kapat</button> 
-            </div>
-        </div>        
     </div>
+    
+    <!-- Sipariş Detay Modalı -->
+    <div class="siparis-detay-modal" id="siparisModal" style="display:none;">
+        <div class="modal-icerik">
+            <h3>Sipariş Detayları</h3>
+            <ul id="urunListesi">
+                <!-- Ürün listesi burada yer alacak -->
+            </ul>
+            <button class="kapat-btn modal-kapat" onclick="modalKapat('siparisModal')">Kapat</button> 
+        </div>
+    </div>
+
+    <!-- Puanlama Modalı -->
+    <div class="puanlama-modal" id="puanlamaModal" style="display:none;">
+        <div class="modal-icerik">
+            <h3>Puanlama ve Yorum</h3>
+            <div>
+                <button class="star" data-value="1" onclick="setRating(1)">&#9733;</button>
+                <button class="star" data-value="2" onclick="setRating(2)">&#9733;</button>
+                <button class="star" data-value="3" onclick="setRating(3)">&#9733;</button>
+                <button class="star" data-value="4" onclick="setRating(4)">&#9733;</button>
+                <button class="star" data-value="5" onclick="setRating(5)">&#9733;</button>
+            </div>            
+            <textarea id="yorum" placeholder="Yorumunuzu buraya yazın..."></textarea>
+            <input type="hidden" id="siparisIDInput" /> <!-- Sipariş ID'si burada tutulacak -->
+            <button onclick="yorumKaydet()">Kaydet</button>
+            <button class="modal-kapat" onclick="modalKapat('puanlamaModal')">Kapat</button>
+        </div>
+    </div>
+
+
+    <script src="siparisler.js"></script>
 </body>
 </html>

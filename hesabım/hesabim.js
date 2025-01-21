@@ -447,6 +447,10 @@ function siparisleriYukle() {
                                 <p><strong>Toplam Tutar:</strong> ${siparis.ToplamTutar} TL</p>
                             </div>
                             <button class="detay-btn" onclick="siparisDetayGoster(${siparis.SiparisID})">Detay</button>
+                            ${!siparis.Puanlanmis ? 
+                                `<button class="puan-btn" onclick="puanVer(${siparis.SiparisID})">Puan Ver</button>` : 
+                                ''
+                            }
                         </div>
                     `;
                     siparisListesi.innerHTML += siparisHTML;
@@ -458,6 +462,45 @@ function siparisleriYukle() {
         .catch(error => console.error('Siparişler yüklenirken hata oluştu:', error));
 }
 
+// Puan verme fonksiyonu (Bu fonksiyonu isteğinize göre şekillendirebilirsiniz)
+function puanVer(siparisID) {
+    // Puanlama modal'ını açalım
+    const puanlamaModal = document.getElementById('puanlamaModal'); // Doğru modal id'sini hedefleyin
+    puanlamaModal.style.display = 'flex'; // Modal'ı göster
+
+    // Sipariş ID'yi kaydedelim, yorum ve puanlama işlemi için
+    document.getElementById('siparisIDInput').value = siparisID;
+}
+
+let selectedRating = 0;  // Başlangıçta herhangi bir puan verilmedi
+
+// Yıldızlara tıklandığında çalışacak fonksiyon
+function setRating(rating) {
+    selectedRating = rating;  // Seçilen puan değerini kaydediyoruz
+    updateStars(rating);  // Yıldızları güncelle
+}
+
+// Yıldızları güncelleme fonksiyonu
+function updateStars(rating) {
+    document.querySelectorAll('.star').forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('selected');  // Seçilen yıldızları sarıya döner
+        } else {
+            star.classList.remove('selected');  // Diğer yıldızları gri yapar
+        }
+    });
+
+    // Seçilen puan değerini kaydediyoruz
+    console.log(`Seçilen puan: ${rating}`);
+}
+
+// Sayfa yüklendiğinde yıldızların renklerini güncelle
+document.addEventListener('DOMContentLoaded', function() {
+    updateStars(selectedRating);  // Sayfa yüklendiğinde daha önce seçilen puan varsa, o kadar yıldız sarı olmalı
+});
+
+
+// Sipariş Detayı Gösterme
 function siparisDetayGoster(siparisID) {
     fetch(`/api/siparisler-cek/detay/${siparisID}`)
         .then(response => response.json())
@@ -481,10 +524,43 @@ function siparisDetayGoster(siparisID) {
         .catch(error => console.error('Sipariş detayları yüklenirken hata oluştu:', error));
 }
 
+// Modal Kapatma
 function modalKapat() {
-    const modal = document.getElementById('siparisModal');
-    modal.style.display = 'none';
+    const siparisModal = document.getElementById('siparisModal');
+    const puanlamaModal = document.getElementById('puanlamaModal');
+    siparisModal.style.display = 'none';
+    puanlamaModal.style.display = 'none';
 }
+
+function yorumKaydet() {
+    const yorum = document.getElementById('yorum').value;
+    const puan = selectedRating;
+    const siparisID = document.getElementById('siparisIDInput').value;
+
+    if (!puan || !yorum) {
+        alert("Lütfen puan ve yorum girin.");
+        return;
+    }
+
+    fetch('/api/yorum-puan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ siparisID, puan, yorum })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Yorum ve puan başarıyla kaydedildi.");
+            modalKapat();  // Yorum kaydedildikten sonra modalı kapat
+        } else {
+            alert("Bir hata oluştu, lütfen tekrar deneyin.");
+        }
+    })
+    .catch(error => console.error("Yorum kaydedilirken hata oluştu:", error));
+}
+
 
 // -------------------- //
 // PUANLARIM KODLARI   //

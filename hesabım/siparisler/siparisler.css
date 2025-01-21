@@ -1,11 +1,15 @@
 .siparisler-container {
     padding: 20px;
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    border-radius: 8px;
 }
 
 .siparisler-container h2 {
     margin-bottom: 20px;
     color: #333;
+    font-size: 24px;
+    font-weight: 600;
 }
 
 .siparis-listesi {
@@ -18,28 +22,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 20px;
     border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-}
-
-.siparis-detay p {
-    margin: 5px 0;
-    color: #555;
-}
-
-.goruntule-btn {
-    padding: 10px 20px;
-    background-color: #ff9900;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.goruntule-btn:hover {
-    background-color: #e68a00;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .siparis-detay-modal {
@@ -54,41 +41,69 @@
     align-items: center;
 }
 
+/* Genel Modal Stili */
 .modal-icerik {
     background-color: white;
     padding: 20px;
     border-radius: 5px;
     width: 400px;
     text-align: center;
+    position: relative;
 }
 
-.modal-icerik h3 {
-    margin-bottom: 20px;
-    color: #333;
+/* Modal arka planı */
+.siparis-detay-modal, .puanlama-modal {
+    display: none; /* Başlangıçta gizli */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Yarı şeffaf siyah arka plan */
+    justify-content: center;
+    align-items: center;
 }
 
-.modal-icerik ul {
-    list-style: none;
-    padding: 0;
-    text-align: left;
-}
-
-.modal-icerik ul li {
-    margin: 10px 0;
-    color: #555;
-}
-
-.modal-kapat {
-    background-color: #f44336; /* Kırmızı arka plan */
-    color: white; /* Beyaz metin */
-    border: none;
-    padding: 10px 20px;
-    text-align: center;
-    font-size: 16px;
+/* Yıldız butonlarını stilize ediyoruz */
+.star {
+    font-size: 1.5em; /* Buton boyutunu küçültüyoruz */
+    color: #d3d3d3; /* Sönük gri renk */
     cursor: pointer;
-    margin-top: 20px;
+    background: none; /* Arka plan rengini kaldırıyoruz */
+    border: none;
+    margin: 0 5px; /* Yıldızlar arasında biraz boşluk bırakıyoruz */
+    transition: color 0.2s ease-in-out; /* Yumuşak geçiş efekti */
+    display: inline-block; /* Yan yana dizilmesini sağlıyoruz */
 }
 
-.modal-kapat:hover {
-    background-color: #e53935; /* Hover durumunda biraz daha koyu kırmızı */
+/* Seçilen yıldızları sarıya boyamak */
+.star.selected {
+    color: #ffcc00; /* Altın sarısı */
 }
+
+/* Hover efektiyle yıldızın rengini değiştir */
+.star:hover {
+    color: #ff9900; /* Hover rengi */
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #ff9900;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #e68a00;
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
