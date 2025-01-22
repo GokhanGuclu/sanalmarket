@@ -96,7 +96,7 @@ function displayActiveOrders(orders) {
         const row = activeOrdersBody.insertRow();
         let actionButton = '';
 
-        if (order.durum === 'Hazırlanıyor') {
+        if (order.durum === 'Hazırlandı') {
             actionButton = `<button class="btn btn-success" onclick="showOrderDetails(${order.id})">Teslim Al</button>`;
         } else if (order.durum === 'Yolda') {
             actionButton = `<button class="btn btn-success" onclick="handleDelivery(${order.id}, '${order.teslimatKodu}')">Teslim Et</button>`;

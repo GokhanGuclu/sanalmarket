@@ -16,7 +16,6 @@
             <li><a href="#" onclick="showSection('orders')">Siparişler</a></li>
             <li><a href="#" onclick="showSection('campaigns')">Kampanyalar</a></li>
             <li><a href="#" onclick="showSection('customer-reviews')">Müşteri Puanları</a></li>
-            <li><a href="#" onclick="showSection('settings')">Ayarlar</a></li>
         </ul>
     </div>
 
@@ -31,6 +30,14 @@
 
         <div id="product-management" class="section">
             <h2>Ürün Yönetimi</h2>
+
+            <h3>Ürün Arama</h3>
+            <input type="text" id="search-product" placeholder="Ürün adı girin...">
+            <button onclick="searchProduct()">Ara</button>
+            
+            <h3>Arama Sonucu</h3>
+            <div id="search-result"></div>
+          
 
             <h3>Yeni Ürün Ekle</h3>
             <form id="add-product-form" onsubmit="event.preventDefault();">
@@ -85,8 +92,8 @@
                 <button type="submit">Stok Güncelle</button>
             </form>
 
-            <h3>Ürün Listesi</h3>
-            <div id="product-list" class="product-grid"></div>
+            
+
         </div>
 
         <div id="orders" class="section">
@@ -99,51 +106,24 @@
 
 
             <h3>Yeni Kampanya Ekle</h3>
-            <form id="add-campaign-form" onsubmit="event.preventDefault(); ">
-                <input type="text" id="campaign-name" placeholder="Kampanya Adı" required>
-                <input type="number" id="discount-rate" placeholder="İndirim Oranı (%)" required>
-                <select id="campaign-type" onchange="toggleCampaignFields()">
-                    <option value="category">Kategori</option>
-                    <option value="product">Ürün</option>
-                </select>
+            <form id="add-campaign-form" onsubmit="event.preventDefault();">
+                <label for="campaign-name">Kampanya Adı:</label>
+                <input type="text" id="campaign-name" required>
 
-                <div id="campaign-product-field" style="display: none;">
-                    <label for="campaign-products"
-                        style="font-weight: bold; color: #333; font-size: 14px; margin-bottom: 5px; display: inline-block;">
-                        Ürünler:
-                    </label>
-                    <select id="campaign-products" multiple
-                        style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; color: #333; font-size: 14px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);">
-                    </select>
-                </div>
+                <label for="discount-rate">İndirim Oranı (%):</label>
+                <input type="number" id="discount-rate" required>
 
-                <div id="campaign-category-field">
-                    <label for="campaign-category">Kategori:</label>
-                    <select id="campaign-category">
-                        <option value="Atıştırmalıklar">Atıştırmalıklar</option>
-                        <option value="İçecekler">İçecekler</option>
-                        <option value="Dondurma">Dondurma</option>
-                        <option value="Meyve & Sebze">Meyve & Sebze</option>
-                        <option value="Dondurulmuş Gıda">Dondurulmuş Gıda</option>
-                        <option value="Fırın">Fırın</option>
-                        <option value="Süt & Kahvaltılık">Süt & Kahvaltılık</option>
-                        <option value="Hazır Yemek">Hazır Yemek</option>
-                        <option value="Özel Beslenme">Özel Beslenme</option>
-                        <option value="Et & Tavuk & Balık">Et & Tavuk & Balık</option>
-                        <option value="Temel Gıda">Temel Gıda</option>
-                        <option value="Bebek">Bebek</option>
-                        <option value="Evcil Hayvan">Evcil Hayvan</option>
-                        <option value="Temizlik & Ev Gereçleri">Temizlik & Ev Gereçleri</option>
-                        <option value="Kişisel Bakım & Kozmetik">Kişisel Bakım & Kozmetik</option>
-                        <option value="Cinsel Sağlık">Cinsel Sağlık</option>
-                        <option value="Ev Yaşam">Ev Yaşam</option>
-                        <option value="Hobi & Oyun">Hobi & Oyun</option>
-                    </select>
-                </div>
-                
+                <label for="campaign-product">Ürün Seç:</label>
+                <select id="campaign-product" required></select>
+
                 <button type="submit">Kampanya Ekle</button>
-                <h3>Aktif Kampanyalar</h3>
-                <ul id="campaign-list"></ul>
+            </form>
+
+
+
+
+            <h3>Aktif Kampanyalar</h3>
+            <ul id="campaign-list"></ul>
             </form>
         </div>
 
@@ -152,11 +132,7 @@
             <ul id="review-list"></ul>
         </div>
 
-        <div id="settings" class="section">
-            <h2>Ayarlar</h2>
-            <p>Ayarlar ile ilgili içerik burada gösterilecek.</p>
-        </div>
-    </div>
+        
 
     <script src="satıcı.js"></script>
 </body>

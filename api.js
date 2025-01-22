@@ -1001,7 +1001,7 @@ router.post('/siparis-olustur', async (req, res) => {
 
         const siparisQuery = `
             INSERT INTO siparis (SepetID, ToplamFiyat, Durum, Tarih, Adres) 
-            VALUES (?, (SELECT SepetFiyat FROM sepet WHERE SepetID = ?), 'Hazırlanıyor', NOW(), 
+            VALUES (?, (SELECT SepetFiyat FROM sepet WHERE SepetID = ?), 'Hazırlandı', NOW(), 
             (
                 SELECT CONCAT(AdresAciklama, ', ', Ilce, '/', Sehir) 
                 FROM adres
@@ -1257,255 +1257,379 @@ router.post('/siparis/guncelle', async (req, res) => {
     }
 });
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'resimler/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueFilename = uuidv4() + path.extname(file.originalname);
-        cb(null, uniqueFilename);
-    }
-});
+// SATICI   
 
-const { v4: uuidv4 } = require('uuid');
 
+
+
+
+// **📌 Multer Konfigürasyonu (Resim Yükleme)**
 const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, path.join(__dirname, 'resimler')),
+        filename: (req, file, cb) => cb(null, file.originalname)
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 }, // Maksimum 5MB
     fileFilter: (req, file, cb) => {
         const fileTypes = /jpeg|jpg|png|gif/;
         const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
         const mimeType = fileTypes.test(file.mimetype);
-
-        if (extname && mimeType) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Sadece resim dosyaları yüklenebilir!'));
-        }
+        if (extname && mimeType) cb(null, true);
+        else cb(new Error('Sadece resim dosyaları yüklenebilir!'));
     }
 });
 
-router.post('/urun/gorsel', upload.single('urunGorsel'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Dosya yüklenemedi.' });
-    }
-
-    const gorselYolu = `/resimler/${req.file.filename}`;
-    res.json({ success: true, gorselYolu });
-});
-
+// **📌 Ürün Ekleme**
 router.post('/urun', upload.single('Gorsel'), async (req, res) => {
     try {
         const { UrunAdi, UrunFiyat, Aciklama, Kategori, Stok } = req.body;
-        const Gorsel = req.file ? req.file.filename : null; 
+        const Gorsel = req.file ? req.file.originalname : null;
+        if (!Gorsel) return res.status(400).json({ message: 'Görsel yüklenemedi.' });
 
-        if (!Gorsel) {
-            return res.status(400).json({ message: 'Görsel yüklenemedi.' });
-        }
-
-        const query = `
-            INSERT INTO urun (UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel)
-            VALUES (?, ?, ?, ?, ?, ?);
-        `;
-
-        await runQuery(query, [UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel]);
+        await runQuery(`INSERT INTO urun (UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel) 
+                        VALUES (?, ?, ?, ?, ?, ?)`,
+            [UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel]);
 
         res.status(201).json({ message: 'Ürün başarıyla eklendi!' });
     } catch (error) {
-        console.error('Ürün eklenirken hata oluştu:', error);
-        res.status(500).json({ message: 'Ürün eklenemedi.' });
+        res.status(500).json({ message: 'Ürün eklenemedi.', error: error.message });
     }
 });
 
+// **📌 Tüm Ürünleri Listeleme**
 router.get('/urun', async (req, res) => {
     try {
-        const query = `
-            SELECT UrunID, UrunAdi, UrunFiyat, Aciklama, Kategori, Stok, Gorsel
-            FROM urun;
-        `;
-
-        const urunler = await runQuery(query);
-
-        const urunlerWithImages = urunler.map(urun => ({
-            ...urun,
-            Gorsel: urun.Gorsel ? `/resimler/${urun.Gorsel}` : null
-        }));
-
-        res.json({ success: true, urunler: urunlerWithImages });
+        const urunler = await runQuery(`SELECT * FROM urun;`);
+        res.json({ success: true, urunler });
     } catch (error) {
-        console.error('Ürünler alınırken hata oluştu:', error.message);
-        res.status(500).json({ success: false, message: 'Ürünler alınamadı.' });
+        res.status(500).json({ success: false, message: 'Ürünler alınamadı.', error: error.message });
     }
 });
 
-router.put('/urun/stok-guncelle', async (req, res) => {
-    const { UrunAdi, yeniStok } = req.body;
-
+// **📌 Ürün Silme**
+router.delete('/urun/:urunID', async (req, res) => {
     try {
-        if (yeniStok < 0) {
-            return res.status(400).json({ message: 'Stok değeri negatif olamaz.' });
-        }
-        if (typeof UrunAdi !== 'string' || UrunAdi.trim() === '') {
-            return res.status(400).json({ message: 'Geçerli bir ürün adı girmelisiniz.' });
-        }
-
-        const query = `
-            UPDATE urun
-            SET Stok = ?
-            WHERE UrunAdi = ?;
-        `;
-
-        const result = await runQuery(query, [yeniStok, UrunAdi]);
-
-        if (result.affectedRows === 0) {
-            console.error('Ürün bulunamadı:', UrunAdi);
-            return res.status(404).json({ message: 'Ürün bulunamadı.' });
-        }
-
-        res.json({ message: 'Stok başarıyla güncellendi.' });
+        const { urunID } = req.params;
+        await runQuery(`DELETE FROM urun WHERE UrunID = ?`, [urunID]);
+        res.json({ success: true, message: 'Ürün başarıyla silindi.' });
     } catch (error) {
-        console.error('Stok güncelleme hatası:', error);
-        res.status(500).json({
-            message: 'Stok güncelleme başarısız oldu.',
-            error: error.message 
-        });
+        res.status(500).json({ success: false, message: 'Ürün silinemedi.', error: error.message });
     }
 });
 
-router.get('/kampanya', async (req, res) => {
-    try {
-        const query = `
-            SELECT 
-                i.IndirimOrani, 
-                i.KampanyaAdi,
-                u.UrunAdi, 
-                u.UrunFiyat, 
-                u.Kategori, 
-                u.Stok, 
-                u.Aciklama, 
-                u.Gorsel
-            FROM indirim i
-            LEFT JOIN urun u ON i.UrunID = u.UrunID;
-        `;
-        const kampanyalar = await runQuery(query);
-        console.log(kampanyalar);
-
-        if (!kampanyalar || kampanyalar.length === 0) {
-            return res.status(404).json({ message: 'Aktif kampanya bulunamadı.' });
-        }
-
-        res.json({ kampanyalar }); 
-    } catch (error) {
-        console.error('Kampanyalar alınamadı:', error);
-        res.status(500).json({ message: 'Kampanya verileri alınamadı.', error: error.message });
-    }
-});
-
-
-
+// **📌 Ürüne Kampanya Ekleme**
 router.post('/kampanya-ekle', async (req, res) => {
-    const { kampanyaAdi, indirimOrani, kategori, urunler } = req.body;
-
     try {
-        if (kategori) {
-            const query = `
-                INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
-                SELECT UrunID, ?, ?
-                FROM urun
-                WHERE Kategori = ?;
-            `;
-            await runQuery(query, [indirimOrani, kampanyaAdi, kategori]);
+        const { urunID, indirimOrani, kampanyaAdi } = req.body;
+        if (!urunID || !indirimOrani || !kampanyaAdi) {
+            return res.status(400).json({ success: false, message: "Ürün ID, kampanya adı ve indirim oranı zorunludur!" });
         }
 
-        if (urunler && urunler.length > 0) {
-            for (const urunAdi of urunler) {
-                const urunKontrol = await runQuery('SELECT UrunID FROM urun WHERE UrunAdi = ?', [urunAdi]);
-                if (urunKontrol.length === 0) {
-                    return res.status(400).json({ message: 'Ürün "${UrunAdi}" bulunamadı.' });
-                }
-            }
+        await runQuery(`INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi) VALUES (?, ?, ?)`, 
+                       [urunID, indirimOrani, kampanyaAdi]);
 
-            const query = `
-                INSERT INTO indirim (UrunID, IndirimOrani, KampanyaAdi)
-                SELECT UrunID, ?, ?
-                FROM urun
-                WHERE UrunAdi IN (?);
-            `;
-            await runQuery(query, [indirimOrani, kampanyaAdi, urunler]);
-        }
-
-        res.json({ success: true, message: 'Kampanya başarıyla eklendi!' });
+        res.status(201).json({ success: true, message: "Kampanya başarıyla eklendi!" });
     } catch (error) {
-        console.error('Kampanya ekleme hatası:', error);
-        res.status(500).json({ message: 'Kampanya ekleme başarısız oldu.' });
+        console.error("Kampanya ekleme hatası:", error.message);
+        res.status(500).json({ success: false, message: "Kampanya eklenemedi.", error: error.message });
     }
 });
-
 
 router.get('/kampanya-urun', async (req, res) => {
     try {
-        const query = 'SELECT UrunAdi, UrunID FROM urun';
+        const query = `SELECT UrunID, UrunAdi FROM urun WHERE Stok > 0 ORDER BY UrunAdi ASC;`;
         const urunler = await runQuery(query);
-        res.json({ urunler }); 
+
+        if (urunler.length === 0) {
+            return res.json({ success: false, message: "Hiç ürün bulunamadı.", urunler: [] });
+        }
+
+        res.json({ success: true, urunler });
     } catch (error) {
-        console.error('Ürünler alınamadı:', error);
-        res.status(500).json({ message: 'Ürün verileri alınamadı.', error: error.message });
+        console.error("Kampanya ürünleri çekilirken hata:", error.message);
+        res.status(500).json({ success: false, message: "Ürünler alınırken bir hata oluştu." });
     }
 });
 
+
+router.get('/kampanya', async (req, res) => {
+    try {
+        const kampanyalar = await runQuery(`
+            SELECT i.IndirimID, i.IndirimOrani, i.KampanyaAdi, u.UrunAdi, u.UrunFiyat
+            FROM indirim i 
+            LEFT JOIN urun u ON i.UrunID = u.UrunID
+        `);
+        
+        res.json({ success: true, kampanyalar });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Kampanyalar alınamadı.', error: error.message });
+    }
+});
+
+
+
+// **📌 Kampanya Silme**
+router.delete('/kampanya/:indirimID', async (req, res) => {
+    try {
+        const { indirimID } = req.params;
+
+        // **Önce kampanyanın gerçekten olup olmadığını kontrol et**
+        const checkQuery = `SELECT * FROM indirim WHERE IndirimID = ?`;
+        const kampanya = await runQuery(checkQuery, [indirimID]);
+
+        if (kampanya.length === 0) {
+            return res.status(404).json({ success: false, message: "Kampanya bulunamadı." });
+        }
+
+        // **Kampanyayı sil**
+        const deleteQuery = `DELETE FROM indirim WHERE IndirimID = ?`;
+        const result = await runQuery(deleteQuery, [indirimID]);
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ success: false, message: "Kampanya silinemedi. Lütfen tekrar deneyin." });
+        }
+
+        res.json({ success: true, message: "Kampanya başarıyla silindi!" });
+    } catch (error) {
+        console.error('Kampanya silme hatası:', error.message);
+        res.status(500).json({ success: false, message: "Kampanya silinemedi.", error: error.message });
+    }
+});
+
+// Stok Güncelleme
+router.put('/urun/stok-guncelle', async (req, res) => {
+    const { UrunAdi, yeniStok } = req.body;
+    try {
+        if (yeniStok < 0 || !UrunAdi.trim()) return res.status(400).json({ message: 'Geçerli bir ürün adı ve stok giriniz.' });
+        const result = await runQuery(`UPDATE urun SET Stok = ? WHERE UrunAdi = ?`, [yeniStok, UrunAdi]);
+        result.affectedRows ? res.json({ message: 'Stok güncellendi.' }) : res.status(404).json({ message: 'Ürün bulunamadı.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Stok güncelleme başarısız oldu.' });
+    }
+});
+
+// Siparişleri Listeleme
 router.get('/siparis', async (req, res) => {
     try {
-        const query = `
+        const siparisler = await runQuery(`
             SELECT 
                 sp.SiparisID,
                 sp.ToplamFiyat,
                 sp.Durum,
-                sp.Tarih,
-                k.Ad AS MusteriAd,
-                k.Soyad AS MusteriSoyad
-            FROM 
-                siparis sp
-            JOIN 
-                sepet s ON sp.SepetID = s.SepetID
-            JOIN 
-                kullanici k ON s.KullaniciID = k.KullaniciID
-        `;
-        const siparisler = await runQuery(query);
-        res.json({ siparisler });
+                COALESCE(DATE_FORMAT(sp.Tarih, '%Y-%m-%d %H:%i:%s'), 'Tarih bilgisi yok') AS SiparisTarihi,
+                COALESCE(k.Ad, 'Bilinmiyor') AS MusteriAdi,
+                COALESCE(k.Soyad, '') AS MusteriSoyad,
+                COALESCE(GROUP_CONCAT(DISTINCT u.UrunAdi SEPARATOR ', '), 'Ürün bilgisi mevcut değil') AS Urunler
+            FROM siparis sp
+            JOIN sepet s ON sp.SepetID = s.SepetID
+            LEFT JOIN kullanici k ON s.KullaniciID = k.KullaniciID
+            LEFT JOIN sepeturunleri su ON s.SepetID = su.SepetID
+            LEFT JOIN urun u ON su.UrunID = u.UrunID
+            GROUP BY sp.SiparisID, sp.ToplamFiyat, sp.Durum, sp.Tarih, k.Ad, k.Soyad;
+        `);
+
+        res.json({ success: true, siparisler });
     } catch (error) {
-        console.error('Siparişler alınırken hata oluştu:', error.message);
-        res.status(500).json({ error: 'Siparişler alınamadı.' });
+        console.error("Siparişler çekilirken hata:", error.message);
+        res.status(500).json({ success: false, message: "Siparişler alınamadı.", error: error.message });
     }
 });
 
-
-
+// Yorumları Listeleme
 router.get('/musteripuanlari', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                yp.YorumID,
-                yp.Puan,
-                yp.Yorum,
-                k.Ad AS MusteriAd,
-                k.Soyad AS MusteriSoyad,
-                sp.Tarih AS SiparisTarihi
-            FROM 
-                yorumpuan yp
-            JOIN 
-                siparis sp ON yp.SiparisID = sp.SiparisID
-            JOIN 
-                sepet s ON sp.SepetID = s.SepetID
-            JOIN 
-                kullanici k ON s.KullaniciID = k.KullaniciID
-        `;
-        const yorumlar = await runQuery(query);
+        const yorumlar = await runQuery(
+            `SELECT yp.YorumID, yp.Puan, yp.Yorum,
+       k.Ad AS MusteriAdi, k.Soyad AS MusteriSoyad,
+       sp.Tarih AS YorumTarihi,
+       GROUP_CONCAT(u.UrunAdi SEPARATOR ', ') AS Urunler
+FROM yorumpuan yp
+JOIN siparis sp ON yp.SiparisID = sp.SiparisID
+JOIN sepet s ON sp.SepetID = s.SepetID
+JOIN kullanici k ON s.KullaniciID = k.KullaniciID
+JOIN sepeturunleri su ON s.SepetID = su.SepetID
+JOIN urun u ON su.UrunID = u.UrunID
+WHERE yp.Yorum IS NOT NULL
+GROUP BY yp.YorumID, k.Ad, k.Soyad, sp.Tarih, yp.Puan, yp.Yorum;
+
+`);
+
         res.json({ yorumlar });
     } catch (error) {
-        console.error('Müşteri puanları alınırken hata oluştu:', error.message);
         res.status(500).json({ error: 'Müşteri puanları alınamadı.' });
     }
 });
+router.get('/ara/urun', async (req, res) => {
+    const { arama } = req.query;
+
+    if (!arama) {
+        return res.status(400).json({ success: false, message: 'Arama terimi belirtilmedi.' });
+    }
+
+    try {
+        const query = `
+            SELECT UrunID, UrunAdi, Aciklama, UrunFiyat, Stok, Gorsel
+            FROM urun
+            WHERE UrunAdi = ?
+            LIMIT 1;
+        `;
+
+        const urunler = await runQuery(query, [arama]);
+
+        if (urunler.length === 0) {
+            return res.json({ success: false, urunler: [] });
+        }
+
+        res.json({ success: true, urunler });
+    } catch (error) {
+        console.error('Ürün arama hatası:', error.message);
+        res.status(500).json({ success: false, message: 'Ürün aranırken bir hata oluştu.' });
+    }
+});
+
+// Ürün Güncelleme (Görsel Dahil)
+const fs = require("fs");
+
+// Ürün Güncelleme (Görsel Dahil)
+router.put('/urun/:urunID', upload.single('Gorsel'), async (req, res) => {
+    const { urunID } = req.params;
+    const { Aciklama, UrunFiyat, Stok } = req.body;
+    const yeniGorsel = req.file ? req.file.filename : null;
+
+    if (!Aciklama || !UrunFiyat || Stok < 0) {
+        return res.status(400).json({ success: false, message: "Eksik veya hatalı veri!" });
+    }
+
+    try {
+        let eskiGorsel = await runQuery(`SELECT Gorsel FROM urun WHERE UrunID = ?`, [urunID]);
+
+        if (eskiGorsel.length > 0 && yeniGorsel) {
+            let eskiDosyaYolu = path.join(__dirname, "resimler", eskiGorsel[0].Gorsel);
+            if (fs.existsSync(eskiDosyaYolu)) {
+                fs.unlinkSync(eskiDosyaYolu); // Eski görseli sil
+            }
+        }
+
+        let query;
+        let params;
+
+        if (yeniGorsel) {
+            query = `UPDATE urun SET Aciklama = ?, UrunFiyat = ?, Stok = ?, Gorsel = ? WHERE UrunID = ?`;
+            params = [Aciklama, UrunFiyat, Stok, yeniGorsel, urunID];
+        } else {
+            query = `UPDATE urun SET Aciklama = ?, UrunFiyat = ?, Stok = ? WHERE UrunID = ?`;
+            params = [Aciklama, UrunFiyat, Stok, urunID];
+        }
+
+        const result = await runQuery(query, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Ürün bulunamadı." });
+        }
+
+        res.json({ success: true, message: "Ürün başarıyla güncellendi!" });
+    } catch (error) {
+        console.error("Ürün güncellenirken hata:", error.message);
+        res.status(500).json({ success: false, message: "Ürün güncellenemedi." });
+    }
+});
+// anasayfada yeni sipairşler için
+router.get('/yeni-siparisler', async (req, res) => {
+    try {
+        const siparisler = await runQuery(`
+            SELECT 
+                sp.SiparisID,
+                sp.ToplamFiyat,
+                sp.Durum,
+                COALESCE(DATE_FORMAT(sp.Tarih, '%Y-%m-%d %H:%i:%s'), 'Tarih bilgisi yok') AS SiparisTarihi,
+                COALESCE(k.Ad, 'Bilinmiyor') AS MusteriAdi,
+                COALESCE(k.Soyad, '') AS MusteriSoyad,
+                COALESCE(GROUP_CONCAT(DISTINCT u.UrunAdi SEPARATOR ', '), 'Ürün bilgisi mevcut değil') AS Urunler
+            FROM siparis sp
+            JOIN sepet s ON sp.SepetID = s.SepetID
+            LEFT JOIN kullanici k ON s.KullaniciID = k.KullaniciID
+            LEFT JOIN sepeturunleri su ON s.SepetID = su.SepetID
+            LEFT JOIN urun u ON su.UrunID = u.UrunID
+            WHERE sp.Durum = 'Hazırlanıyor'
+            GROUP BY sp.SiparisID, sp.ToplamFiyat, sp.Durum, sp.Tarih, k.Ad, k.Soyad;
+        `);
+
+        res.json({ success: true, siparisler });
+    } catch (error) {
+        console.error("Yeni siparişler çekilirken hata:", error.message);
+        res.status(500).json({ success: false, message: "Yeni siparişler alınamadı.", error: error.message });
+    }
+});
+
+
+// azalan stoklar 
+router.get('/azalan-stoklar', async (req, res) => {
+    try {
+        const azalanStoklar = await runQuery(`
+            SELECT UrunID, UrunAdi, Stok 
+            FROM urun 
+            WHERE Stok < 50
+            ORDER BY Stok ASC;
+        `);
+
+        res.json({ success: true, urunler: azalanStoklar });
+    } catch (error) {
+        console.error("Azalan stoklar çekilirken hata:", error.message);
+        res.status(500).json({ success: false, message: "Azalan stoklar alınamadı.", error: error.message });
+    }
+});
+
+router.put('/siparis/guncelle/:siparisID', async (req, res) => {
+    try {
+        const { siparisID } = req.params;
+
+        // Siparişin mevcut durumunu kontrol et
+        const siparis = await runQuery(`SELECT Durum, SepetID FROM siparis WHERE SiparisID = ?`, [siparisID]);
+
+        if (siparis.length === 0) {
+            return res.status(404).json({ success: false, message: "Sipariş bulunamadı." });
+        }
+
+        const sepetID = siparis[0].SepetID;
+        let yeniDurum = "Hazırlanıyor"; // Varsayılan durum değişimi
+
+        if (siparis[0].Durum === "Hazırlanıyor") {
+            yeniDurum = "Hazırlandı";
+
+            // **Sipariş "Hazırlanıyor" → "Hazırlandı" geçişindeyse stoktan düşelim**
+            const sepetUrunleri = await runQuery(`SELECT UrunID, UrunSayisi FROM sepeturunleri WHERE SepetID = ?`, [sepetID]);
+
+            for (const urun of sepetUrunleri) {
+                // Ürünün mevcut stok miktarını al
+                const stokBilgisi = await runQuery(`SELECT Stok FROM urun WHERE UrunID = ?`, [urun.UrunID]);
+
+                if (stokBilgisi.length === 0) {
+                    return res.status(400).json({ success: false, message: `Ürün (ID: ${urun.UrunID}) stokta bulunmuyor!` });
+                }
+
+                const mevcutStok = stokBilgisi[0].Stok;
+                if (mevcutStok < urun.UrunSayisi) {
+                    return res.status(400).json({ success: false, message: `Ürün (ID: ${urun.UrunID}) için yeterli stok yok!` });
+                }
+
+                // Stoktan düşme işlemi
+                await runQuery(`UPDATE urun SET Stok = Stok - ? WHERE UrunID = ?`, [urun.UrunSayisi, urun.UrunID]);
+            }
+        } else if (siparis[0].Durum === "Hazırlandı") {
+            return res.status(400).json({ success: false, message: "Sipariş zaten hazırlandı." });
+        }
+
+        // Sipariş durumunu güncelle
+        await runQuery(`UPDATE siparis SET Durum = ? WHERE SiparisID = ?`, [yeniDurum, siparisID]);
+
+        res.json({ success: true, message: `Sipariş durumu "${yeniDurum}" olarak güncellendi!`, yeniDurum });
+    } catch (error) {
+        console.error("Sipariş güncelleme hatası:", error.message);
+        res.status(500).json({ success: false, message: "Sipariş durumu güncellenemedi.", error: error.message });
+    }
+});
+
+
 
 
 module.exports = router;

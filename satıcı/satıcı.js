@@ -61,6 +61,7 @@ async function loadData(url, listElement, formatItem) {
     }
 }
 
+// Liste öğelerini formatlama fonksiyonları
 function formatOrderItem(order) {
     return `Sipariş ID: ${order.SiparisID}, Müşteri ID: ${order.MusteriID}, ...`;
 }
@@ -73,6 +74,7 @@ function formatReviewItem(review) {
     return `Müşteri Adı: <b>${review.musteri_adi}</b>, Puan: <b>${review.puan}</b>, Yorum: <i>${review.yorum}</i>`;
 }
 
+// Ürünleri listeleme fonksiyonu
 function displayProducts(products) {
     const productList = document.getElementById('product-list');
     productList.innerHTML = '';
@@ -91,6 +93,7 @@ function displayProducts(products) {
     });
 }
 
+// Yeni ürün ekleme fonksiyonu
 async function addProduct() {
     try {
         const urunAdi = document.getElementById('urun-adi').value;
@@ -130,48 +133,48 @@ async function addProduct() {
         console.error('Hata:', error);
         alert('Ürün eklenirken bir hata oluştu: ' + error.message);
     }
-}
-async function loadProducts() {
+}async function loadProducts() {
     try {
-      const response = await fetch('/api/urun'); 
-      if (!response.ok) {
-        const message = `Ürünler yüklenirken bir hata oluştu: ${response.status}`;
-        throw new Error(message);
-      }
-  
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.message || 'Ürünler alınamadı.');
-      }
-  
-      const products = data.urunler;
-      const productList = document.getElementById('product-list');
-      productList.innerHTML = ''; 
-  
-      if (products.length === 0) {
-        productList.innerHTML = '<p>Şu anda görüntülenecek ürün bulunmamaktadır.</p>';
-        return;
-      }
-  
-      products.forEach(product => {
-        const li = document.createElement('li');
-        li.classList.add('product-item'); 
-        li.innerHTML = `
-          <h3>${product.UrunAdi}</h3>
-          <p><strong>Stok:</strong> ${product.Stok}</p>
-          <p><strong>Fiyat:</strong> ${product.UrunFiyat} ₺</p>
-          <p><strong>Kategori:</strong> ${product.Kategori}</p>
-          <p><strong>Açıklama:</strong> ${product.Aciklama}</p>
-          ${product.Gorsel ? `<img src="${product.Gorsel}" alt="${product.UrunAdi} görseli">` : ''}
-        `;
-        productList.appendChild(li);
-      });
+        const response = await fetch('/api/urun');
+        const data = await response.json();
+
+        const productList = document.getElementById('product-list');
+        productList.innerHTML = '';
+
+        if (!data.success || !Array.isArray(data.urunler) || data.urunler.length === 0) {
+            productList.innerHTML = '<p>Şu anda görüntülenecek ürün bulunmamaktadır.</p>';
+            return;
+        }
+
+        data.urunler.forEach(product => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <h3>${product.UrunAdi}</h3>
+                <p>Fiyat: ${product.UrunFiyat} TL</p>
+                <p>Stok: ${product.Stok}</p>
+                <button onclick="deleteProduct(${product.UrunID})">Sil</button>
+            `;
+            productList.appendChild(li);
+        });
     } catch (error) {
-      console.error('Ürün yükleme hatası:', error);
-      alert('Ürünler yüklenirken bir hata oluştu.');
+        console.error('Ürünler yüklenirken hata oluştu:', error);
     }
-  }
+}
+
+async function deleteProduct(urunID) {
+    try {
+        await fetch(`/api/urun/${urunID}`, { method: 'DELETE' });
+        alert('Ürün silindi!');
+        loadProducts();
+    } catch (error) {
+        console.error('Ürün silme hatası:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadProducts);
+
   
+// Stok güncelleme fonksiyonu
 async function updateStock() {
     try {
         const productName = document.getElementById('update-stock-name').value;
@@ -210,77 +213,37 @@ async function updateStock() {
         alert('Bir hata oluştu: ' + error.message);
     }
 }
+let availableProducts = []; // Ürünleri saklayacağız
 
-async function addCampaign() {
-    const campaignName = document.getElementById('campaign-name').value.trim();
-    const discountRate = parseFloat(document.getElementById('discount-rate').value);
-    const campaignType = document.getElementById('campaign-type').value;
-    let campaignCategory = null;
-    let selectedProducts = [];
-
+// **📌 Kampanyaya Eklenebilir Ürünleri Listeleme**
+async function loadProductsForCampaign() {
     try {
-        if (campaignType === 'category') {
-            campaignCategory = document.getElementById('campaign-category')?.value;
-            if (!campaignCategory) {
-                alert('Lütfen bir kategori seçin.');
-                return;
-            }
-            selectedProducts = [];
-        } else if (campaignType === 'product') {
-            selectedProducts = Array.from(document.getElementById('campaign-products').selectedOptions)
-                .map(option => option.value);
+        const response = await fetch('/api/kampanya-urun'); // API çağrısı
+        if (!response.ok) {
+            throw new Error(`Ürünler alınamadı. HTTP Hata Kodu: ${response.status}`);
+        }
 
-            if (selectedProducts.length === 0) {
-                alert('Lütfen en az bir ürün seçin.');
-                return;
-            }
-            campaignCategory = null; 
-        } else {
-            alert('Geçersiz kampanya tipi!');
+        const data = await response.json();
+        console.log("Kampanya Ürünleri API Yanıtı:", data); // Konsolda veriyi kontrol et
+
+        const campaignProductSelect = document.getElementById('campaign-product');
+        if (!campaignProductSelect) {
+            console.error("HATA: 'campaign-product' ID'li öğe bulunamadı!");
             return;
         }
 
-        const response = await fetch('/api/kampanya-ekle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                kampanyaAdi: campaignName,
-                indirimOrani: discountRate,
-                kategori: campaignCategory,
-                urunler: selectedProducts,
-            }),
-        });
+        campaignProductSelect.innerHTML = ''; // Önceki ürünleri temizle
+        availableProducts = data.urunler; // API'den gelen ürünleri kaydet
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            const errorMessage = errorData.message || errorData.error || 'Kampanya ekleme başarısız oldu.';
-            throw new Error(errorMessage);
+        if (!data.success || !Array.isArray(data.urunler) || data.urunler.length === 0) {
+            campaignProductSelect.innerHTML = '<option disabled>Hiç ürün bulunamadı</option>';
+            return;
         }
-
-        alert('Kampanya başarıyla eklendi!');
-        document.getElementById('add-campaign-form').reset();
-        loadCampaigns();
-    } catch (error) {
-        console.error('Kampanya ekleme hatası:', error);
-        alert('Bir hata oluştu: ' + error.message);
-    }
-}
-
-async function loadProductsForCampaign() {
-    try {
-        const response = await fetch('/api/kampanya-urun');
-        if (!response.ok) {
-            throw new Error('Ürünler alınamadı.');
-        }
-        const data = await response.json();
-
-        const campaignProductSelect = document.getElementById('campaign-products');
-        campaignProductSelect.innerHTML = '';
 
         data.urunler.forEach(product => {
             const option = document.createElement('option');
-            option.value = product.UrunAdi; 
-            option.text = product.UrunAdi;
+            option.value = product.UrunAdi; // Kullanıcıya gösterilecek değer
+            option.textContent = product.UrunAdi;
             campaignProductSelect.appendChild(option);
         });
     } catch (error) {
@@ -288,37 +251,35 @@ async function loadProductsForCampaign() {
         alert('Ürünler yüklenemedi!');
     }
 }
+
 async function loadCampaigns() {
     try {
-        const response = await fetch('/api/kampanya');
+        const response = await fetch('/api/kampanya'); // Kampanyaları çekiyoruz
         if (!response.ok) {
             throw new Error('Kampanyalar alınamadı.');
         }
-        const data = await response.json(); 
-
-        console.log(data); 
+        const data = await response.json();
+        console.log("Kampanyalar API Yanıtı:", data); // API yanıtını kontrol edin
 
         const campaignList = document.getElementById('campaign-list');
-        campaignList.innerHTML = '';
+        campaignList.innerHTML = ''; // Önceki listeyi temizle
 
-        if (Array.isArray(data.kampanyalar)) {
-            data.kampanyalar.forEach(campaign => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>${campaign.KampanyaAdi}</strong> <br>
-                    Kategori: ${campaign.Kategori} <br>
-                    Stok: ${campaign.Stok} <br>
-                    Açıklama: ${campaign.Aciklama} <br>
-                    Görsel: <img src="${campaign.Gorsel}" alt="${campaign.UrunAdi}" width="100" /> <br>
-                    Fiyat: ${campaign.UrunFiyat} TL <br>
-                    İndirim Oranı: %${campaign.IndirimOrani} <br>
-                `;
-                campaignList.appendChild(listItem);
-            });
-        } else {
-            console.error('API yanıtı beklenen formatta değil:', data);
-            alert('Kampanyalar yüklenemedi!');
+        if (!data.success || !Array.isArray(data.kampanyalar) || data.kampanyalar.length === 0) {
+            campaignList.innerHTML = '<p>Şu anda kampanyalı ürün bulunmamaktadır.</p>';
+            return;
         }
 
+        data.kampanyalar.forEach(campaign => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <h3>${campaign.KampanyaAdi}</h3>
+                <p>Ürün: ${campaign.UrunAdi}</p>
+                <p>İndirim Oranı: %${campaign.IndirimOrani}</p>
+                <p>Yeni Fiyat: ${(campaign.UrunFiyat * (1 - campaign.IndirimOrani / 100)).toFixed(2)} TL</p>
+                <button onclick="deleteCampaign(${campaign.IndirimID})">Kampanyayı Sil</button>
+            `;
+            campaignList.appendChild(li);
+        });
     } catch (error) {
         console.error('Kampanyalar yüklenirken hata oluştu:', error);
         alert('Kampanyalar yüklenemedi!');
@@ -326,6 +287,232 @@ async function loadCampaigns() {
 }
 
 
+// **📌 Kampanya Ekleme Fonksiyonu**
+async function addCampaign() {
+    try {
+        const selectedProductName = document.getElementById('campaign-product').value;
+        const indirimOrani = document.getElementById('discount-rate').value;
+        const kampanyaAdi = document.getElementById('campaign-name').value;
+
+        if (!selectedProductName || !indirimOrani || !kampanyaAdi) {
+            alert("Lütfen tüm alanları doldurun!");
+            return;
+        }
+
+        // **Ürün adından ID bul**
+        const selectedProduct = availableProducts.find(p => p.UrunAdi === selectedProductName);
+        if (!selectedProduct) {
+            alert("Seçilen ürün sistemde bulunamadı!");
+            return;
+        }
+
+        const urunID = selectedProduct.UrunID; // Ürün ID'yi al
+
+        const response = await fetch('/api/kampanya-ekle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                urunID, // ID'yi gönderiyoruz
+                indirimOrani,
+                kampanyaAdi
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Kampanya eklenemedi.");
+        }
+
+        alert("Kampanya başarıyla eklendi!");
+        document.getElementById('add-campaign-form').reset();
+        
+        loadCampaigns(); // Kampanyaları yenile
+
+    } catch (error) {
+        console.error("Kampanya ekleme hatası:", error);
+        alert("Bir hata oluştu: " + error.message);
+    }
+}
+
+async function deleteCampaign(indirimID) {
+    try {
+        console.log("Silinecek Kampanya ID:", indirimID); // ID'yi kontrol et
+
+        if (!indirimID) {
+            alert("Hata: Kampanya ID alınamadı!");
+            return;
+        }
+
+        if (!confirm("Bu kampanyayı silmek istediğinize emin misiniz?")) {
+            return;
+        }
+
+        const response = await fetch(`/api/kampanya/${indirimID}`, { method: 'DELETE' });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Kampanya silinemedi.");
+        }
+
+        alert("Kampanya başarıyla silindi!");
+        loadCampaigns(); // Listeyi yenile
+    } catch (error) {
+        console.error('Kampanya silme hatası:', error);
+        alert("Kampanya silinemedi. Detay: " + error.message);
+    }
+}
+
+
+
+// **📌 Sayfa Yüklendiğinde Kampanyaları ve Ürünleri Getir**
+document.addEventListener('DOMContentLoaded', () => {
+    loadCampaigns(); // Kampanyaları yükle
+    loadProductsForCampaign(); // Kampanyaya eklenebilir ürünleri getir
+});
+// Ürün arama fonksiyonu
+async function searchProduct() {
+    const searchQuery = document.getElementById("search-product").value.trim();
+
+    if (!searchQuery) {
+        alert("Lütfen bir ürün adı girin.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/ara/urun?arama=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+
+        const searchResult = document.getElementById("search-result");
+        searchResult.innerHTML = "";
+
+        if (!data.success || !data.urunler || data.urunler.length === 0) {
+            searchResult.innerHTML = "<p>Ürün bulunamadı.</p>";
+            return;
+        }
+
+        // **Yanlış ürünü çekmeyi önlemek için kontrol ekleyelim**
+        const product = data.urunler.find(p => p.UrunAdi.toLowerCase() === searchQuery.toLowerCase());
+
+        if (!product) {
+            searchResult.innerHTML = "<p>Ürün bulunamadı.</p>";
+            return;
+        }
+
+        // Ürün düzenleme formunu oluştur
+        const form = document.createElement("form");
+        form.id = "edit-form";
+        form.innerHTML = `
+            <label>Ürün Adı:</label>
+            <input type="text" id="edit-name" value="${product.UrunAdi}" disabled>
+
+            <label>Açıklama:</label>
+            <input type="text" id="edit-description" value="${product.Aciklama}">
+
+            <label>Fiyat (TL):</label>
+            <input type="number" id="edit-price" value="${product.UrunFiyat}" step="0.01">
+
+            <label>Stok:</label>
+            <input type="number" id="edit-stock" value="${product.Stok}" step="1">
+
+            <label>Mevcut Görsel:</label>
+            <img id="current-image" src="${product.Gorsel}" alt="Ürün Görseli" style="width: 100px; height: auto;">
+
+            <label>Yeni Görsel Yükle:</label>
+            <input type="file" id="edit-image" accept="image/*">
+
+            <button type="button" id="update-button">Düzenle</button>
+            <button type="button" id="delete-button">Sil</button>
+        `;
+
+        searchResult.appendChild(form);
+
+        // Yeni görsel seçildiğinde önizleme yap
+        const imageInput = document.getElementById("edit-image");
+        const currentImage = document.getElementById("current-image");
+        imageInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Güncelleme butonu için event ekleyelim
+        document.getElementById("update-button").addEventListener("click", () => updateProduct(product.UrunID));
+
+        // Silme butonu için event ekleyelim
+        document.getElementById("delete-button").addEventListener("click", () => deleteProduct(product.UrunID));
+
+    } catch (error) {
+        console.error("Ürün arama hatası:", error);
+        alert("Ürün aranırken hata oluştu.");
+    }
+}
+
+
+// Ürün Güncelleme Fonksiyonu (Görsel Dahil)
+async function updateProduct(urunID) {
+    const aciklama = document.getElementById("edit-description").value;
+    const fiyat = document.getElementById("edit-price").value;
+    const stok = document.getElementById("edit-stock").value;
+    const gorsel = document.getElementById("edit-image").files[0];
+
+    const formData = new FormData();
+    formData.append("Aciklama", aciklama);
+    formData.append("UrunFiyat", fiyat);
+    formData.append("Stok", stok);
+    if (gorsel) {
+        formData.append("Gorsel", gorsel);
+    }
+
+    try {
+        const response = await fetch(`/api/urun/${urunID}`, {
+            method: "PUT",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+
+        alert("Ürün başarıyla güncellendi!");
+        searchProduct(); // Ürünü yeniden yükle
+    } catch (error) {
+        console.error("Ürün güncelleme hatası:", error);
+        alert("Ürün güncellenirken hata oluştu.");
+    }
+}
+
+// Ürün Silme Fonksiyonu
+async function deleteProduct(urunID) {
+    if (!confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/urun/${urunID}`, {
+            method: "DELETE"
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+
+        alert("Ürün başarıyla silindi!");
+        document.getElementById("search-result").innerHTML = ""; // Ürünü ekrandan kaldır
+    } catch (error) {
+        console.error("Ürün silme hatası:", error);
+        alert("Ürün silinemedi.");
+    }
+}
 async function loadOrders() {
     try {
         const response = await fetch('/api/siparis');
@@ -333,36 +520,74 @@ async function loadOrders() {
             throw new Error('Siparişler alınamadı.');
         }
         const data = await response.json();
+        console.log("Siparişler API Yanıtı:", data);
 
         const orderList = document.getElementById('order-list');
         orderList.innerHTML = '';
 
-        if (data && Array.isArray(data.siparisler)) {
-            data.siparisler.forEach(order => {
-                const listItem = document.createElement('li');
-
-                const urunlerListesi = Array.isArray(order.Urunler)
-                    ? order.Urunler.join(', ')
-                    : 'Ürün bilgisi mevcut değil';
-
-                listItem.innerHTML = `
-                    <strong>Sipariş ID:</strong> ${order.SiparisID} <br>
-                    <strong>Müşteri Adı:</strong> ${order.MusteriAdi || 'Bilinmiyor'} <br>
-                    <strong>Ürünler:</strong> ${urunlerListesi} <br>
-                    <strong>Toplam Tutar:</strong> ${order.ToplamTutar || '0.00'} TL <br>
-                    <strong>Sipariş Tarihi:</strong> ${order.SiparisTarihi || 'Tarih bilgisi yok'} <br>
-                `;
-                orderList.appendChild(listItem);
-            });
-        } else {
-            console.error('API yanıtı beklenen formatta değil:', data);
-            alert('Siparişler yüklenemedi!');
+        if (!data.success || data.siparisler.length === 0) {
+            orderList.innerHTML = '<p>Şu anda sipariş bulunmamaktadır.</p>';
+            return;
         }
+
+        data.siparisler.forEach(order => {
+            const listItem = document.createElement('li');
+            let butonDurum = order.Durum;
+            let butonRenk = "blue"; // Default olarak "Hazırlanıyor" rengi mavi
+
+            if (order.Durum === "Hazırlandı") {
+                butonRenk = "green";
+            }
+
+            listItem.innerHTML = `
+                <strong>Sipariş ID:</strong> ${order.SiparisID} <br>
+                <strong>Müşteri Adı:</strong> ${order.MusteriAdi} ${order.MusteriSoyad} <br>
+                <strong>Ürünler:</strong> ${order.Urunler} <br>
+                <strong>Toplam Tutar:</strong> ${order.ToplamFiyat} TL <br>
+                <strong>Tarih:</strong> ${order.SiparisTarihi} <br>
+                <strong>Durum:</strong> <span id="durum-${order.SiparisID}">${butonDurum}</span> <br>
+                <button id="btn-${order.SiparisID}" style="background-color: ${butonRenk};" 
+                    onclick="toggleOrderStatus(${order.SiparisID})">
+                    ${butonDurum}
+                </button>
+            `;
+            orderList.appendChild(listItem);
+        });
     } catch (error) {
         console.error('Siparişler yüklenirken hata oluştu:', error);
         alert('Siparişler yüklenemedi!');
     }
 }
+
+async function toggleOrderStatus(siparisID) {
+    try {
+        const response = await fetch(`/api/siparis/guncelle/${siparisID}`, { method: 'PUT' });
+
+        const data = await response.json();
+        if (!response.ok) {
+            alert(data.message);
+            return;
+        }
+
+        console.log("Sipariş Güncellendi:", data);
+
+        // Buton ve sipariş durumunu güncelle
+        document.getElementById(`durum-${siparisID}`).innerText = data.yeniDurum;
+        document.getElementById(`btn-${siparisID}`).innerText = data.yeniDurum;
+
+        // Buton rengini yeni duruma göre değiştir
+        let yeniRenk = "blue"; 
+        if (data.yeniDurum === "Hazırlandı") {
+            yeniRenk = "green";
+        }
+        document.getElementById(`btn-${siparisID}`).style.backgroundColor = yeniRenk;
+
+    } catch (error) {
+        console.error('Sipariş durumu güncellenirken hata oluştu:', error);
+        alert('Sipariş durumu güncellenemedi!');
+    }
+}
+
 
 async function loadReviews() {
     try {
@@ -372,31 +597,117 @@ async function loadReviews() {
         }
         const data = await response.json();
 
+        console.log("Yorum Verileri:", data); // Hata ayıklama için
+
         const reviewList = document.getElementById('review-list');
         reviewList.innerHTML = '';
 
-        if (Array.isArray(data.yorumlar)) {
-            data.yorumlar.forEach(review => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `
-                    <strong>Müşteri Adı:</strong> ${review.MusteriAdi} <br>
-                    <strong>Ürün:</strong> ${review.UrunAdi} <br>
-                    <strong>Puan:</strong> ${review.Puan} <br>
-                    <strong>Yorum:</strong> ${review.Yorum} <br>
-                    <strong>Yorum Tarihi:</strong> ${review.YorumTarihi} <br>
-                `;
-                reviewList.appendChild(listItem);
-            });
-        } else {
-            console.error('API yanıtı beklenen formatta değil:', data);
-            alert('Yorumlar yüklenemedi!');
+        if (data.yorumlar.length === 0) {
+            reviewList.innerHTML = '<p>Henüz müşteri yorumu bulunmamaktadır.</p>';
+            return;
         }
+
+        data.yorumlar.forEach(review => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                <strong>Müşteri:</strong> ${review.MusteriAdi || 'Bilinmiyor'} ${review.MusteriSoyad || ''} <br>
+                <strong>Ürünler:</strong> ${review.Urunler || 'Ürünler bulunamadı'} <br>
+                <strong>Puan:</strong> ${review.Puan} <br>
+                <strong>Yorum:</strong> ${review.Yorum} <br>
+                <strong>Tarih:</strong> ${review.YorumTarihi || 'Tarih Yok'} <br>
+            `;
+            reviewList.appendChild(listItem);
+        });
     } catch (error) {
-        console.error('Yorumlar yüklenirken hata oluştu:', error);
+        console.error('Yorumları yüklerken hata oluştu:', error);
         alert('Yorumlar yüklenemedi!');
     }
 }
 
+async function loadNewOrders() {
+    try {
+        const response = await fetch('/api/yeni-siparisler');
+        if (!response.ok) {
+            throw new Error(`Yeni siparişler alınamadı. HTTP Hata Kodu: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Yeni Siparişler API Yanıtı:", data);
+
+        const orderList = document.getElementById('new-orders-list');
+        orderList.innerHTML = '';
+
+        if (!data.success || data.siparisler.length === 0) {
+            orderList.innerHTML = '<p>Hazırlanıyor durumunda sipariş bulunmamaktadır.</p>';
+            return;
+        }
+
+        data.siparisler.forEach(order => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                <strong>Sipariş ID:</strong> ${order.SiparisID} <br>
+                <strong>Müşteri Adı:</strong> ${order.MusteriAdi} ${order.MusteriSoyad} <br>
+                <strong>Ürünler:</strong> ${order.Urunler} <br>
+                <strong>Toplam Tutar:</strong> ${order.ToplamFiyat} TL <br>
+                <strong>Tarih:</strong> ${order.SiparisTarihi} <br>
+            `;
+            orderList.appendChild(listItem);
+        });
+    } catch (error) {
+        console.error('Yeni siparişler yüklenirken hata oluştu:', error);
+        alert('Yeni siparişler yüklenemedi!');
+    }
+}
+
+async function loadDecreasingStock() {
+    try {
+        const response = await fetch('/api/azalan-stoklar');
+        if (!response.ok) {
+            throw new Error(`Azalan stoklar alınamadı. HTTP Hata Kodu: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Azalan Stoklar API Yanıtı:", data);
+
+        const stockList = document.getElementById('decreasing-stock-list');
+        stockList.innerHTML = '';
+
+        if (!data.success || data.urunler.length === 0) {
+            stockList.innerHTML = '<p>50’den az stoklu ürün bulunmamaktadır.</p>';
+            return;
+        }
+
+        data.urunler.forEach(urun => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                <strong>Ürün Adı:</strong> ${urun.UrunAdi} <br>
+                <strong>Stok:</strong> ${urun.Stok} adet <br>
+            `;
+            stockList.appendChild(listItem);
+        });
+    } catch (error) {
+        console.error('Azalan stoklar yüklenirken hata oluştu:', error);
+        alert('Azalan stoklar yüklenemedi!');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadNewOrders(); // Yeni siparişleri yükle
+    loadDecreasingStock(); // Azalan stokları yükle
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadReviews();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadOrders();
+});
+document.addEventListener('DOMContentLoaded', () => {
+    loadProductsForCampaign();
+});
+
+// Sayfa yüklendiğinde çalışacak fonksiyonlar
 function initializePage() {
     loadOrders();
     loadReviews();
@@ -405,6 +716,7 @@ function initializePage() {
     loadProducts();
 }
 
+// Event listener'ları ekle
 document.getElementById('add-product-form').addEventListener('submit', (event) => {
     event.preventDefault();
     addProduct();
@@ -422,8 +734,9 @@ document.getElementById('add-campaign-form').addEventListener('submit', (event) 
 
 document.getElementById('campaign-type').addEventListener('change', toggleCampaignFields);
 
+// Sayfa yüklendiğinde initializePage fonksiyonunu çağır
 document.addEventListener('DOMContentLoaded', () => {
    
-    loadData('/api/urun', document.getElementById('product-list'), displayProducts);
+    loadData('/api/urun', document.getElementById('product-list'), displayProducts); // Ürünleri yükle
     initializePage();
 });
