@@ -161,10 +161,16 @@ sanalmarket/
 
 Bu proje ISC lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakınız.
 
-## 👨‍💻 Geliştirici
+## 👨‍💻 Geliştiriciler
 
 - **Gökhan Güçlü**
   - GitHub: [@GokhanGuclu](https://github.com/GokhanGuclu)
+
+- **Veli Yılmaz**
+  - GitHub: [@VeliYılmaz](https://github.com/vlylmz)
+
+- **Şükrü Yurdabak**
+  - GitHub: [@ŞükrüYurdabak](https://github.com/wildclazz)
 
 ## 🤝 Katkıda Bulunma
 
