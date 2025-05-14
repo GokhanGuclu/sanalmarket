@@ -14,7 +14,6 @@ Modern ve kullanıcı dostu bir e-ticaret deneyimi sunan sanal market uygulamas�
 
 ### 🛍️ Alışveriş Deneyimi
 - 🔍 Gelişmiş ürün arama ve filtreleme
-- 📱 Responsive tasarım ile mobil uyumlu arayüz
 - 🏷️ Kategorilere göre ürün listeleme
 - 💰 İndirimli ürünler ve kampanyalar
 - 🛒 Dinamik alışveriş sepeti
