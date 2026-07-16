@@ -1118,7 +1118,7 @@ async function dogrulamaKoduMail(alicimail, kod) {
         service: "gmail",
         auth: {
             user: process.env.MAIL, 
-            pass: "eswh vwws arjt tsgk"   
+            pass: process.env.MAIL_PASS   
         }
     });
 
@@ -1142,7 +1142,7 @@ async function siparisBilgilendirmeMail(alicimail, konu, mesaj) {
         service: "gmail",
         auth: {
             user: process.env.MAIL, 
-            pass: "eswh vwws arjt tsgk"   
+            pass: process.env.MAIL_PASS   
         }
     });
 
